@@ -1,0 +1,81 @@
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useBranch } from './BranchContext';
+import { useAuth } from './AuthContext';
+
+const ZoneContext = createContext(null);
+const API_URL = `http://${window.location.hostname}:5000/api/zones`;
+
+export const ZoneProvider = ({ children }) => {
+  const { activeBranch } = useBranch();
+  const { user: currentUser } = useAuth();
+  const [allZones, setZones] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch zones from backend
+  const fetchZones = async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setZones(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch zones from backend:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchZones();
+  }, []);
+
+  const zones = React.useMemo(() => {
+    if (activeBranch === 'All Branches') return allZones;
+    return allZones.filter(z => z.branch === activeBranch);
+  }, [allZones, activeBranch]);
+
+  const addZone = async (zoneData) => {
+    const userBranch = currentUser && !['Super Admin'].includes(currentUser.role) 
+      ? currentUser.branch 
+      : (activeBranch === 'All Branches' ? 'Chennai' : activeBranch);
+    const newZone = { ...zoneData, branch: userBranch };
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newZone)
+      });
+      if (response.ok) {
+        const savedZone = await response.json();
+        setZones([...allZones, savedZone]);
+      }
+    } catch (err) {
+      console.error('Failed to save zone:', err);
+    }
+  };
+
+  const updateZone = async (id, updatedData) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        setZones(allZones.map(z => z.id === id ? updated : z));
+      }
+    } catch (err) {
+      console.error('Failed to update zone:', err);
+    }
+  };
+
+  return (
+    <ZoneContext.Provider value={{ zones, addZone, updateZone }}>
+      {children}
+    </ZoneContext.Provider>
+  );
+};
+
+export const useZones = () => useContext(ZoneContext);

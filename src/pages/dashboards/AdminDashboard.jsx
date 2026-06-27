@@ -1,0 +1,219 @@
+import React from 'react';
+import { useVisitors } from '../../context/VisitorContext';
+import { useBranch } from '../../context/BranchContext';
+import { useZones } from '../../context/ZoneContext';
+import { useAuth } from '../../context/AuthContext';
+import { Users, Clock, Building, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { calculateTimeSpent } from '../../utils/timeUtils';
+
+const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
+    <div className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClass}`}>
+      <Icon size={24} />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+    </div>
+  </div>
+);
+
+const AdminDashboard = () => {
+  const { allVisitors, updateVisitorStatus } = useVisitors();
+  const { branches } = useBranch();
+  const { zones } = useZones();
+  const { user: currentUser } = useAuth();
+
+  // Metrics calculations
+  const today = new Date().toISOString().split('T')[0];
+  const visitorsToday = allVisitors.filter(v => v.visitDate === today).length;
+  const pendingApprovals = allVisitors.filter(v => v.status === 'Pending Admin').length;
+  
+  // Dummy data for Security Alerts and Zone Violations for MD overview
+  const securityAlerts = 2; // Simulated
+  const zoneViolations = 1; // Simulated
+  const branchCount = branches.length;
+
+  // Visitor Trends Data (Dummy for chart)
+  const trendsData = [
+    { day: 'Mon', visitors: 45 },
+    { day: 'Tue', visitors: 52 },
+    { day: 'Wed', visitors: 38 },
+    { day: 'Thu', visitors: 65 },
+    { day: 'Fri', visitors: 80 },
+    { day: 'Sat', visitors: 20 },
+    { day: 'Sun', visitors: 15 },
+  ];
+  const maxTrend = Math.max(...trendsData.map(d => d.visitors));
+
+  // Branch Performance Data (Dummy for chart)
+  const branchData = branches.map(b => ({
+    name: b,
+    visitors: Math.floor(Math.random() * 100) + 20,
+    efficiency: Math.floor(Math.random() * 30) + 70 // 70-100%
+  }));
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Branch Admin Dashboard</h1>
+        <p className="text-gray-500 mt-1">Overview of branch visitor metrics and pending approvals.</p>
+      </div>
+
+      {pendingApprovals > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 shadow-sm mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="text-orange-600" size={24} />
+            <h2 className="text-lg font-bold text-orange-900">Action Required: Pending Approvals ({pendingApprovals})</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm">
+              <thead className="bg-orange-100/50">
+                <tr className="text-orange-800 text-xs uppercase tracking-wider">
+                  <th className="px-4 py-3 font-semibold">Visitor</th>
+                  <th className="px-4 py-3 font-semibold">Host</th>
+                  <th className="px-4 py-3 font-semibold">Purpose</th>
+                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-orange-100">
+                {allVisitors.filter(v => v.status === 'Pending Admin').map(v => (
+                  <tr key={v.id}>
+                    <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{v.purpose}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button 
+                        onClick={() => updateVisitorStatus(v.id, 'Pending MD', { approvedBy: currentUser?.name })}
+                        className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 mr-2"
+                      >
+                        Approve
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const reason = window.prompt("Reason for rejection:");
+                          if (reason !== null) {
+                            updateVisitorStatus(v.id, 'Rejected', { approvedBy: currentUser?.name, remarks: reason });
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <DashboardCard title="Visitors Today" value={visitorsToday} icon={Users} colorClass="bg-blue-100 text-blue-600" />
+        <DashboardCard title="Pending Approvals" value={pendingApprovals} icon={Clock} colorClass="bg-orange-100 text-orange-600" />
+        <DashboardCard title="Security Alerts" value={securityAlerts} icon={ShieldAlert} colorClass="bg-red-100 text-red-600" />
+        <DashboardCard title="Zone Violations" value={zoneViolations} icon={AlertTriangle} colorClass="bg-yellow-100 text-yellow-600" />
+        <DashboardCard title="Branch Statistics" value={branchCount} icon={Building} colorClass="bg-purple-100 text-purple-600" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        
+        {/* Visitor Trends Chart */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <h3 className="text-[11px] font-bold text-gray-500 mb-6 uppercase tracking-wider">Visitor Trends (This Week)</h3>
+          <div className="flex items-end justify-between h-64 gap-2">
+            {trendsData.map((data, index) => (
+              <div key={index} className="flex flex-col items-center justify-end h-full flex-1 group">
+                <div 
+                  className="w-full bg-[#1E1B6E] rounded-t-sm transition-all duration-500 relative group-hover:bg-indigo-700"
+                  style={{ height: `${(data.visitors / maxTrend) * 100}%` }}
+                >
+                  <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {data.visitors}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 mt-2">{data.day}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Branch Performance Chart */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex flex-col">
+          <h3 className="text-[11px] font-bold text-gray-500 mb-6 uppercase tracking-wider">Branch Performance</h3>
+          <div className="flex-1 space-y-6 flex flex-col justify-center">
+            {branchData.map((branch, index) => (
+              <div key={index}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-medium text-gray-700">{branch.name}</span>
+                  <span className="font-bold text-gray-900">{branch.visitors} Visitors</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5">
+                  <div 
+                    className="bg-purple-500 h-2.5 rounded-full" 
+                    style={{ width: `${(branch.visitors / 150) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      <div className="mt-8 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="text-[var(--color-brand-indigo)]" size={20} />
+            Recent Visitor Activity
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
+                <th className="px-6 py-4 font-medium">Visitor Name</th>
+                <th className="px-6 py-4 font-medium">Entry Time</th>
+                <th className="px-6 py-4 font-medium">Exit Time</th>
+                <th className="px-6 py-4 font-medium">Time Spent</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {[...allVisitors].reverse().slice(0, 10).map((visitor) => (
+                <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{visitor.visitorName}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{visitor.entryTime || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{visitor.exitTime || '-'}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{calculateTimeSpent(visitor.visitDate, visitor.entryTime, visitor.exitTime, visitor.status)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      visitor.status === 'Approved' ? 'bg-blue-100 text-blue-700' :
+                      visitor.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
+                      visitor.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                      visitor.status === 'Inside' ? 'bg-indigo-100 text-[var(--color-brand-indigo)]' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {visitor.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {[...allVisitors].length === 0 && (
+                <tr>
+                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                    No recent visitors found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default AdminDashboard;

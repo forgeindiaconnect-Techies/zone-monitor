@@ -1,0 +1,238 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { User, Phone, Mail, Building, MapPin, Calendar, Clock, LogIn, LogOut, ShieldCheck, AlertCircle, Clock3 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+
+const VisitorPass = () => {
+  const { visitId } = useParams();
+  const [visitor, setVisitor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notes, setNotes] = useState('');
+  const [purpose, setPurpose] = useState('');
+
+  useEffect(() => {
+    fetchVisitor();
+  }, [visitId]);
+
+  const fetchVisitor = async () => {
+    try {
+      const apiUrl = `http://${window.location.hostname}:5000/api/visitors/pass/${visitId}`;
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error('Visitor pass not found or invalid QR code.');
+      }
+      const data = await response.json();
+      setVisitor(data);
+      setPurpose(data.purpose || '');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (action) => {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      let updatePayload = {};
+      
+      if (action === 'checkIn') {
+        updatePayload = {
+          status: 'Inside',
+          currentZone: 'Reception',
+          entryTime: timeString,
+          purpose: purpose // Send updated purpose to backend
+        };
+      } else if (action === 'checkOut') {
+        updatePayload = {
+          status: 'Exited',
+          exitTime: timeString,
+          remarks: notes, // Send notes to backend
+          purpose: purpose // Send updated purpose to backend
+        };
+      }
+
+      const apiUrl = `http://${window.location.hostname}:5000/api/visitors/${visitor.id}/zone`;
+      const response = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+
+      if (response.ok) {
+        const updatedVisitor = await response.json();
+        setVisitor(updatedVisitor);
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      alert('Failed to update status. Please try again.');
+    }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-[var(--color-brand-indigo)] border-t-transparent rounded-full animate-spin"></div></div>;
+  if (error) return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50"><AlertCircle size={48} className="text-red-500 mb-4" /><h1 className="text-xl font-bold text-gray-900">Invalid Pass</h1><p className="text-gray-500">{error}</p></div>;
+  if (!visitor) return null;
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Approved': return 'bg-green-100 text-green-700 border-green-200';
+      case 'Pending': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'Rejected': return 'bg-red-100 text-red-700 border-red-200';
+      case 'Inside': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'Exited': return 'bg-gray-100 text-gray-700 border-gray-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center">
+      <div className="max-w-md w-full space-y-6">
+        
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-extrabold text-[var(--color-brand-indigo)]">ZMVMS</h1>
+          <p className="mt-2 text-sm text-gray-600">Digital Visitor Pass</p>
+        </div>
+
+          {/* Main Pass Card */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            
+            {/* Top Header */}
+            <div className="bg-gradient-to-r from-[var(--color-brand-indigo)] to-indigo-800 py-4 text-center text-white">
+              <h2 className="text-xl font-bold tracking-widest uppercase">Visitor Pass</h2>
+            </div>
+
+            {/* Photo & Basic Details */}
+            <div className="p-8 pb-4 flex flex-col items-center border-b border-gray-100">
+              <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 mb-4 overflow-hidden shadow-sm">
+                {visitor.photoUrl ? (
+                  <img src={visitor.photoUrl} alt="Visitor" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={40} className="text-gray-400" />
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">{visitor.visitorName}</h3>
+              
+              <div className="w-full space-y-3 text-sm">
+                <div className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3">
+                  <span className="font-semibold text-gray-500 uppercase text-xs">Visitor ID :</span>
+                  <span className="font-bold text-[var(--color-brand-indigo)]">{visitor.profileId}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3">
+                  <span className="font-semibold text-gray-500 uppercase text-xs">Visit ID :</span>
+                  <span className="font-bold text-gray-900">{visitor.visitId}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3">
+                  <span className="font-semibold text-gray-500 uppercase text-xs">Branch :</span>
+                  <span className="font-bold text-gray-900">{visitor.branch}</span>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-dashed border-gray-200 pb-3 gap-2">
+                  <span className="font-semibold text-gray-500 uppercase text-xs">Purpose :</span>
+                  {visitor.status === 'Pending' || visitor.status === 'Approved' || visitor.status === 'Inside' ? (
+                    <select 
+                      value={purpose}
+                      onChange={(e) => setPurpose(e.target.value)}
+                      className="text-sm font-bold text-[var(--color-brand-indigo)] bg-indigo-50 border border-indigo-100 rounded-md py-1 px-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-shadow cursor-pointer text-right w-full sm:w-auto appearance-none"
+                    >
+                      <option value="">Select Purpose</option>
+                      <option value="Meeting">Meeting</option>
+                      <option value="Interview">Interview</option>
+                      <option value="Delivery">Delivery</option>
+                      <option value="Maintenance">Maintenance</option>
+                      <option value="Personal">Personal</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  ) : (
+                    <span className="font-bold text-gray-900">{purpose}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3 mt-3">
+                  <span className="font-semibold text-gray-500 uppercase text-xs">Host :</span>
+                  <span className="font-bold text-gray-900">{visitor.hostName}</span>
+                </div>
+                <div className="flex justify-between border-b border-dashed border-gray-100 pb-2">
+                  <span className="font-semibold text-gray-500 uppercase">Date :</span>
+                  <span className="font-bold text-gray-900">{visitor.visitDate}</span>
+                </div>
+                <div className="flex justify-between pb-2">
+                  <span className="font-semibold text-gray-500 uppercase">Status :</span>
+                  <span className={`font-bold px-2 py-0.5 rounded text-xs ${getStatusColor(visitor.status)}`}>
+                    {visitor.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        
+        {/* Notes Section */}
+        {visitor.status === 'Inside' && (
+          <div className="bg-slate-50 p-6 border border-gray-200 rounded-xl">
+            <label className="font-semibold text-gray-500 uppercase text-xs tracking-wider block mb-2">Checkout Notes (Required)</label>
+            <textarea 
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Please enter any remarks or meeting outcomes before checking out..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-indigo)] resize-none"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          {visitor.status === 'Approved' && !visitor.entryTime && (
+            <button 
+              onClick={() => updateStatus('checkIn')}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
+            >
+              <LogIn size={24} /> Tap to Check In
+            </button>
+          )}
+
+          {visitor.status === 'Inside' && !visitor.exitTime && (
+            <button 
+              onClick={() => updateStatus('checkOut')}
+              disabled={notes.trim().length === 0}
+              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
+                notes.trim().length === 0 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                  : 'bg-orange-500 hover:bg-orange-600 text-white active:scale-95'
+              }`}
+            >
+              <LogOut size={24} /> {notes.trim().length === 0 ? 'Fill Notes to Check Out' : 'Tap to Check Out'}
+            </button>
+          )}
+
+          {visitor.status === 'Pending' && (
+            <div className="w-full bg-yellow-50 border border-yellow-200 text-yellow-800 py-4 rounded-xl font-medium text-center shadow-sm flex flex-col items-center justify-center gap-2">
+              <Clock3 size={24} className="text-yellow-600" />
+              <span>Pass is awaiting approval</span>
+            </div>
+          )}
+
+          {visitor.status === 'Rejected' && (
+            <div className="w-full bg-red-50 border border-red-200 text-red-800 py-4 rounded-xl font-medium text-center shadow-sm flex flex-col items-center justify-center gap-2">
+              <AlertCircle size={24} className="text-red-600" />
+              <span>This pass has been rejected</span>
+            </div>
+          )}
+          
+          {visitor.status === 'Exited' && (
+            <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 py-4 rounded-xl font-medium text-center shadow-sm flex flex-col items-center justify-center gap-2">
+              <ShieldCheck size={24} className="text-green-600" />
+              <span>Visit Completed Successfully</span>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default VisitorPass;

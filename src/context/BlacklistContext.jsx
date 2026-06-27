@@ -1,0 +1,67 @@
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useBranch } from './BranchContext';
+import { useAuth } from './AuthContext';
+
+const BlacklistContext = createContext(null);
+const API_URL = `http://${window.location.hostname}:5000/api/blacklist`;
+
+export const BlacklistProvider = ({ children }) => {
+  const { activeBranch } = useBranch();
+  const { user: currentUser } = useAuth();
+  const [allBlacklisted, setBlacklisted] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBlacklist = async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setBlacklisted(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch blacklist:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchBlacklist();
+  }, []);
+
+  const blacklisted = React.useMemo(() => {
+    if (activeBranch === 'All Branches') return allBlacklisted;
+    return allBlacklisted.filter(b => b.branch === activeBranch);
+  }, [allBlacklisted, activeBranch]);
+
+  const addToBlacklist = async (data) => {
+    const userBranch = currentUser && !['Super Admin'].includes(currentUser.role) 
+      ? currentUser.branch 
+      : (activeBranch === 'All Branches' ? 'Chennai' : activeBranch);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, branch: userBranch, blockedDate: new Date().toISOString().split('T')[0] })
+      });
+      if (response.ok) {
+        const saved = await response.json();
+        setBlacklisted([...allBlacklisted, saved]);
+      }
+    } catch (err) {
+      console.error('Failed to add to blacklist:', err);
+    }
+  };
+
+  const isBlacklisted = (mobileNumber) => {
+    return blacklisted.some(b => b.mobileNumber === mobileNumber);
+  };
+
+  return (
+    <BlacklistContext.Provider value={{ blacklisted, addToBlacklist, isBlacklisted }}>
+      {children}
+    </BlacklistContext.Provider>
+  );
+};
+
+export const useBlacklist = () => useContext(BlacklistContext);

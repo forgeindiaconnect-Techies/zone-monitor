@@ -1,0 +1,225 @@
+import React from 'react';
+import { useVisitors } from '../../context/VisitorContext';
+import { useBranch } from '../../context/BranchContext';
+import { useZones } from '../../context/ZoneContext';
+import { Users, UserCheck, Clock, Ban, Building, MapPin, ShieldAlert, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
+    <div className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClass}`}>
+      <Icon size={24} />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+    </div>
+  </div>
+);
+
+const SuperAdminDashboard = () => {
+  const { allVisitors } = useVisitors();
+  const { branches, activeBranch } = useBranch();
+  const { zones } = useZones();
+  const navigate = useNavigate();
+
+  const today = new Date().toISOString().split('T')[0];
+  const totalVisitors = allVisitors.length;
+  const visitorsToday = allVisitors.filter(v => v.visitDate === today).length;
+  const insideVisitors = allVisitors.filter(v => v.status === 'Inside');
+  const pendingApprovals = allVisitors.filter(v => v.status === 'Pending').length;
+  const blockedVisitors = allVisitors.filter(v => v.status === 'Rejected').length;
+  const totalBranches = branches.length;
+
+  // Check if a zone is restricted
+  const isRestricted = (zoneName) => {
+    const zone = zones.find(z => z.name === zoneName);
+    return zone?.restricted || false;
+  };
+
+  const restrictedAlerts = insideVisitors.filter(v => isRestricted(v.currentZone));
+
+  // Visitor Trends Data (Dummy for chart)
+  const trendsData = [
+    { day: 'Mon', visitors: 45 },
+    { day: 'Tue', visitors: 52 },
+    { day: 'Wed', visitors: 38 },
+    { day: 'Thu', visitors: 65 },
+    { day: 'Fri', visitors: 80 },
+    { day: 'Sat', visitors: 20 },
+    { day: 'Sun', visitors: 15 },
+  ];
+  const maxTrend = Math.max(...trendsData.map(d => d.visitors));
+
+  // Branch Performance Data (Dummy for chart)
+  const branchData = branches.map(b => ({
+    name: b,
+    visitors: Math.floor(Math.random() * 100) + 20,
+    efficiency: Math.floor(Math.random() * 30) + 70 // 70-100%
+  }));
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Zone Monitoring Dashboard</h1>
+          <p className="text-gray-500 mt-1">Real-time monitoring for {activeBranch}</p>
+        </div>
+        <div className="flex items-center space-x-2 bg-green-50 text-green-700 px-4 py-2 rounded-full font-medium text-sm border border-green-200">
+          <Activity size={16} className="animate-pulse" />
+          <span>Live Feed Active</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <DashboardCard title="Total Visitors" value={totalVisitors} icon={Users} colorClass="bg-blue-100 text-blue-600" />
+        <DashboardCard title="Visitors Inside" value={insideVisitors.length} icon={UserCheck} colorClass="bg-green-100 text-green-600" />
+        <DashboardCard title="Pending Approvals" value={pendingApprovals} icon={Clock} colorClass="bg-orange-100 text-orange-600" />
+        <DashboardCard title="Blocked Visitors" value={blockedVisitors} icon={Ban} colorClass="bg-red-100 text-red-600" />
+        <DashboardCard title="Total Branches" value={totalBranches} icon={Building} colorClass="bg-purple-100 text-purple-600" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        
+        {/* Live Feed Table */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <UserCheck className="text-[var(--color-brand-indigo)]" size={20} />
+              Recent Visitor Activity
+            </h3>
+          </div>
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
+                  <th className="px-6 py-4 font-medium">Visitor Name</th>
+                  <th className="px-6 py-4 font-medium">Host</th>
+                  <th className="px-6 py-4 font-medium">Current Zone</th>
+                  <th className="px-6 py-4 font-medium">Entry Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {[...allVisitors].reverse().slice(0, 10).map((visitor) => {
+                  const restricted = isRestricted(visitor.currentZone);
+                  return (
+                    <tr key={visitor.id} className={`transition-colors ${restricted ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50/50'}`}>
+                      <td className="px-6 py-4 font-medium text-gray-900">{visitor.visitorName}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{visitor.hostName}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-max ${restricted ? 'bg-red-200 text-red-800' : 'bg-blue-100 text-blue-700'}`}>
+                          <MapPin size={12} /> {visitor.currentZone}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{visitor.entryTime}</td>
+                    </tr>
+                  );
+                })}
+                {[...allVisitors].length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                      No recent visitors found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Alerts & Actions */}
+        <div className="space-y-6 flex flex-col">
+          {/* Restricted Zone Alerts Widget */}
+          <div className="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden flex-1">
+            <div className="p-4 border-b border-red-100 bg-red-50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
+                <ShieldAlert size={18} /> Restricted Zone Alerts
+              </h3>
+              <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{restrictedAlerts.length}</span>
+            </div>
+            <div className="p-4 space-y-3">
+              {restrictedAlerts.map(alert => (
+                <div key={alert.id} className="p-3 bg-white border border-red-200 rounded-lg shadow-sm flex items-start gap-3">
+                  <div className="mt-0.5"><ShieldAlert size={16} className="text-red-500" /></div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{alert.visitorName}</p>
+                    <p className="text-xs text-gray-600 mt-1">Unauthorized access in <span className="font-bold text-red-600">{alert.currentZone}</span></p>
+                    <p className="text-[10px] text-gray-400 mt-1">Entered at {alert.entryTime}</p>
+                  </div>
+                </div>
+              ))}
+              {restrictedAlerts.length === 0 && (
+                <div className="py-6 text-center text-sm text-gray-500">
+                  <ShieldAlert size={24} className="mx-auto text-gray-300 mb-2" />
+                  No restricted alerts currently.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+            <h3 className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-wider">Quick Actions</h3>
+            <div className="space-y-3">
+              <button onClick={() => navigate('/visitors/new')} className="w-full text-left px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-[var(--color-brand-indigo)] rounded-lg font-medium transition-colors shadow-sm">
+                + Pre-register Visitor
+              </button>
+              <button onClick={() => navigate('/tracking')} className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 text-gray-700 rounded-lg font-medium transition-colors shadow-sm">
+                View Access Logs
+              </button>
+              <button onClick={() => navigate('/blacklist')} className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 text-gray-700 rounded-lg font-medium transition-colors shadow-sm">
+                Manage Blacklist
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        {/* Visitor Trends Chart */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <h3 className="text-[11px] font-bold text-gray-500 mb-6 uppercase tracking-wider">Visitor Trends (This Week)</h3>
+          <div className="flex items-end justify-between h-64 gap-2">
+            {trendsData.map((data, index) => (
+              <div key={index} className="flex flex-col items-center justify-end h-full flex-1 group">
+                <div 
+                  className="w-full bg-[#1E1B6E] rounded-t-sm transition-all duration-500 relative group-hover:bg-indigo-700"
+                  style={{ height: `${(data.visitors / maxTrend) * 100}%` }}
+                >
+                  <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {data.visitors}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 mt-2">{data.day}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Branch Performance Chart */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex flex-col">
+          <h3 className="text-[11px] font-bold text-gray-500 mb-6 uppercase tracking-wider">Branch Performance</h3>
+          <div className="flex-1 space-y-6 flex flex-col justify-center">
+            {branchData.map((branch, index) => (
+              <div key={index}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-medium text-gray-700">{branch.name}</span>
+                  <span className="font-bold text-gray-900">{branch.visitors} Visitors</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5">
+                  <div 
+                    className="bg-purple-500 h-2.5 rounded-full" 
+                    style={{ width: `${(branch.visitors / 150) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default SuperAdminDashboard;
