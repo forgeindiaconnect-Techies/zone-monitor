@@ -1,8 +1,11 @@
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost:27017/zmvms').then(async () => {
-  const Visitor = mongoose.model('Visitor', new mongoose.Schema({}, { strict: false }));
-  const v = await Visitor.find({ visitorName: { $regex: /sabari/i } });
-  console.log("Visitors:", v);
+async function test() {
+  await mongoose.connect('mongodb://localhost:27017/zmvms');
+  const Visitor = require('./models/Visitor');
+  const all = await Visitor.find({});
+  console.log(JSON.stringify(all, null, 2));
   process.exit(0);
-});
+}
+
+test();

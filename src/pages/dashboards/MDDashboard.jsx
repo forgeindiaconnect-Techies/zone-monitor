@@ -19,15 +19,15 @@ const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
 );
 
 const MDDashboard = () => {
-  const { allVisitors, updateVisitorStatus } = useVisitors();
+  const { visitors, updateVisitorStatus } = useVisitors();
   const { branches } = useBranch();
   const { zones } = useZones();
   const { user: currentUser } = useAuth();
 
   // Metrics calculations
   const today = new Date().toISOString().split('T')[0];
-  const visitorsToday = allVisitors.filter(v => v.visitDate === today).length;
-  const pendingApprovals = allVisitors.filter(v => v.status === 'Pending MD').length;
+  const visitorsToday = visitors.filter(v => v.visitDate === today).length;
+  const pendingApprovals = visitors.filter(v => v.status === 'Pending MD').length;
   
   // Dummy data for Security Alerts and Zone Violations for MD overview
   const securityAlerts = 2; // Simulated
@@ -78,7 +78,7 @@ const MDDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-orange-100">
-                {allVisitors.filter(v => v.status === 'Pending MD').map(v => (
+                {visitors.filter(v => v.status === 'Pending MD').map(v => (
                   <tr key={v.id}>
                     <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>
@@ -183,7 +183,7 @@ const MDDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {[...allVisitors].reverse().slice(0, 5).map((visitor) => (
+              {[...visitors].reverse().slice(0, 5).map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4 font-medium text-gray-900">{visitor.visitorName}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{visitor.entryTime || '-'}</td>
@@ -202,7 +202,7 @@ const MDDashboard = () => {
                   </td>
                 </tr>
               ))}
-              {[...allVisitors].length === 0 && (
+              {[...visitors].length === 0 && (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
                     No recent visitors found.

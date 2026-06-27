@@ -13,13 +13,28 @@ export const VisitorProvider = ({ children }) => {
   
   const [allVisitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [networkIp, setNetworkIp] = useState(window.location.hostname);
+
+  useEffect(() => {
+    // Fetch network IP for mobile QR code scanning
+    fetch(`http://${window.location.hostname}:5000/api/network-ip`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.ip) {
+          setNetworkIp(data.ip);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Fetch visitors from backend
   const fetchVisitors = async () => {
     try {
-      const response = await fetch(API_URL);
+      console.log('Fetching visitors from API...', API_URL);
+      const response = await fetch(API_URL, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
+        console.log('Visitors fetched successfully:', data);
         setVisitors(data);
       } else {
         console.error('Failed to fetch visitors');
@@ -42,7 +57,7 @@ export const VisitorProvider = ({ children }) => {
           purpose: 'Meeting',
           visitDate: new Date().toISOString().split('T')[0],
           status: 'Pending',
-          branch: 'Chennai Branch',
+          branch: 'Chennai',
         }]);
       }
     } finally {
@@ -62,7 +77,7 @@ export const VisitorProvider = ({ children }) => {
     // If not restricted (Super Admin) and 'All Branches' is selected
     if (activeBranch === 'All Branches') return allVisitors;
     // Otherwise return visitors matching the active branch
-    return allVisitors.filter(v => v.branch === activeBranch);
+    return allVisitors.filter(v => v.branch && v.branch.includes(activeBranch));
   }, [allVisitors, activeBranch]);
 
   const addVisitor = async (visitorData) => {
@@ -87,7 +102,7 @@ export const VisitorProvider = ({ children }) => {
       
       if (response.ok) {
         const savedVisitor = await response.json();
-        setVisitors([...allVisitors, savedVisitor]);
+        setVisitors(prev => [...prev, savedVisitor]);
         addNotification('Visitor Registered', `${savedVisitor.visitorName} has been pre-registered.`, 'success');
       } else {
         throw new Error('Failed to save to database');
@@ -96,7 +111,7 @@ export const VisitorProvider = ({ children }) => {
       console.error(err);
       // Fallback for when backend is not running
       const fallbackVisitor = { ...newVisitor, id: Date.now().toString() };
-      setVisitors([...allVisitors, fallbackVisitor]);
+      setVisitors(prev => [...prev, fallbackVisitor]);
       addNotification('Visitor Registered (Offline)', `${fallbackVisitor.visitorName} saved locally.`, 'warning');
     }
   };
@@ -117,13 +132,13 @@ export const VisitorProvider = ({ children }) => {
       
       if (response.ok) {
         const updatedVisitor = await response.json();
-        setVisitors(allVisitors.map(v => v.id === id ? updatedVisitor : v));
+        setVisitors(prev => prev.map(v => String(v._id || v.id) === String(id) ? updatedVisitor : v));
       } else {
          throw new Error('API Update failed');
       }
     } catch (err) {
       console.error(err);
-      setVisitors(allVisitors.map(v => v.id === id ? { ...v, ...updates } : v));
+      setVisitors(prev => prev.map(v => String(v._id || v.id) === String(id) ? { ...v, ...updates } : v));
     }
     
     if (newStatus === 'Approved') {
@@ -143,13 +158,13 @@ export const VisitorProvider = ({ children }) => {
       
       if (response.ok) {
         const updatedVisitor = await response.json();
-        setVisitors(allVisitors.map(v => v.id === id ? updatedVisitor : v));
+        setVisitors(prev => prev.map(v => String(v._id || v.id) === String(id) ? updatedVisitor : v));
       } else {
          throw new Error('API Update failed');
       }
     } catch (err) {
       console.error(err);
-      setVisitors(allVisitors.map(v => v.id === id ? { ...v, ...trackingData } : v));
+      setVisitors(prev => prev.map(v => String(v._id || v.id) === String(id) ? { ...v, ...trackingData } : v));
     }
     
     if (trackingData.status === 'Inside') {
@@ -167,7 +182,7 @@ export const VisitorProvider = ({ children }) => {
   }, [allVisitors]);
 
   return (
-    <VisitorContext.Provider value={{ visitors, allVisitors, addVisitor, updateVisitorStatus, updateVisitorTracking, loading }}>
+    <VisitorContext.Provider value={{ visitors, allVisitors, addVisitor, updateVisitorStatus, updateVisitorTracking, loading, networkIp }}>
       {children}
     </VisitorContext.Provider>
   );

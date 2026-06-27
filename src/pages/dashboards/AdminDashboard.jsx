@@ -19,15 +19,15 @@ const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
 );
 
 const AdminDashboard = () => {
-  const { allVisitors, updateVisitorStatus } = useVisitors();
+  const { visitors, updateVisitorStatus } = useVisitors();
   const { branches } = useBranch();
   const { zones } = useZones();
   const { user: currentUser } = useAuth();
 
   // Metrics calculations
   const today = new Date().toISOString().split('T')[0];
-  const visitorsToday = allVisitors.filter(v => v.visitDate === today).length;
-  const pendingApprovals = allVisitors.filter(v => v.status === 'Pending Admin').length;
+  const visitorsToday = visitors.filter(v => v.visitDate === today).length;
+  const pendingApprovals = visitors.filter(v => v.status === 'Pending Admin').length;
   
   // Dummy data for Security Alerts and Zone Violations for MD overview
   const securityAlerts = 2; // Simulated
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-orange-100">
-                {allVisitors.filter(v => v.status === 'Pending Admin').map(v => (
+                {visitors.filter(v => v.status === 'Pending Admin').map(v => (
                   <tr key={v.id}>
                     <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>
@@ -181,7 +181,7 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {[...allVisitors].reverse().slice(0, 10).map((visitor) => (
+              {[...visitors].reverse().slice(0, 10).map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4 font-medium text-gray-900">{visitor.visitorName}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{visitor.entryTime || '-'}</td>
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
                   </td>
                 </tr>
               ))}
-              {[...allVisitors].length === 0 && (
+              {[...visitors].length === 0 && (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
                     No recent visitors found.

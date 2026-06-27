@@ -10,7 +10,9 @@ const DashboardRouter = () => {
   const { user } = useAuth();
 
   // Route to specific dashboards based on the user's role
-  switch (user?.role) {
+  if (!user) return null;
+
+  switch (user.role) {
     case 'MD':
       return <MDDashboard />;
     case 'Admin':

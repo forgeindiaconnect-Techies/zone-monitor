@@ -18,17 +18,17 @@ const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
 );
 
 const SuperAdminDashboard = () => {
-  const { allVisitors } = useVisitors();
+  const { visitors } = useVisitors();
   const { branches, activeBranch } = useBranch();
   const { zones } = useZones();
   const navigate = useNavigate();
 
   const today = new Date().toISOString().split('T')[0];
-  const totalVisitors = allVisitors.length;
-  const visitorsToday = allVisitors.filter(v => v.visitDate === today).length;
-  const insideVisitors = allVisitors.filter(v => v.status === 'Inside');
-  const pendingApprovals = allVisitors.filter(v => v.status === 'Pending').length;
-  const blockedVisitors = allVisitors.filter(v => v.status === 'Rejected').length;
+  const totalVisitors = visitors.length;
+  const visitorsToday = visitors.filter(v => v.visitDate === today).length;
+  const insideVisitors = visitors.filter(v => v.status === 'Inside');
+  const pendingApprovals = visitors.filter(v => v.status === 'Pending').length;
+  const blockedVisitors = visitors.filter(v => v.status === 'Rejected').length;
   const totalBranches = branches.length;
 
   // Check if a zone is restricted
@@ -100,7 +100,7 @@ const SuperAdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {[...allVisitors].reverse().slice(0, 10).map((visitor) => {
+                {[...visitors].reverse().slice(0, 10).map((visitor) => {
                   const restricted = isRestricted(visitor.currentZone);
                   return (
                     <tr key={visitor.id} className={`transition-colors ${restricted ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50/50'}`}>
@@ -115,7 +115,7 @@ const SuperAdminDashboard = () => {
                     </tr>
                   );
                 })}
-                {[...allVisitors].length === 0 && (
+                {[...visitors].length === 0 && (
                   <tr>
                     <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
                       No recent visitors found.
@@ -161,8 +161,8 @@ const SuperAdminDashboard = () => {
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
             <h3 className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-wider">Quick Actions</h3>
             <div className="space-y-3">
-              <button onClick={() => navigate('/visitors/new')} className="w-full text-left px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-[var(--color-brand-indigo)] rounded-lg font-medium transition-colors shadow-sm">
-                + Pre-register Visitor
+              <button onClick={() => navigate('/visitors')} className="w-full text-left px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-[var(--color-brand-indigo)] rounded-lg font-medium transition-colors shadow-sm">
+                View Pre-registered Visitors
               </button>
               <button onClick={() => navigate('/tracking')} className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 text-gray-700 rounded-lg font-medium transition-colors shadow-sm">
                 View Access Logs

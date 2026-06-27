@@ -1,7 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 const Visitor = require('../models/Visitor');
 const VisitorProfile = require('../models/VisitorProfile');
+
+// Configure Multer storage to use Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'zmvms_visitors',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
+  },
+});
+const upload = multer({ storage: storage });
+
+// Upload Visitor Photo Endpoint
+router.post('/upload', upload.single('photo'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    // Return the Cloudinary URL
+    res.json({ url: req.file.path });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // Get all visitors
 router.get('/', async (req, res) => {
@@ -72,7 +99,12 @@ router.post('/', async (req, res) => {
 // Get a single visitor by visitId (for public pass page)
 router.get('/pass/:visitId', async (req, res) => {
   try {
-    const visitor = await Visitor.findOne({ visitId: req.params.visitId });
+    const isValidObjectId = require('mongoose').isValidObjectId(req.params.visitId);
+    let query = { visitId: req.params.visitId };
+    if (isValidObjectId) {
+      query = { $or: [{ visitId: req.params.visitId }, { _id: req.params.visitId }] };
+    }
+    const visitor = await Visitor.findOne(query);
     if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
     res.json(visitor);
   } catch (err) {

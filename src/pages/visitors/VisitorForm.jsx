@@ -2,45 +2,124 @@ import React, { useState } from 'react';
 import { useVisitors } from '../../context/VisitorContext';
 import { useBlacklist } from '../../context/BlacklistContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, User, Calendar, FileText, Camera, IdCard, Info, Search } from 'lucide-react';
+import { ArrowLeft, Save, Upload, User, Calendar, FileText, Camera, IdCard, Info, Search, AlertCircle, QrCode, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import Webcam from 'react-webcam';
 
 const VisitorForm = () => {
-  const { addVisitor, allVisitors } = useVisitors();
+  const { addVisitor, allVisitors, networkIp } = useVisitors();
   const { isBlacklisted } = useBlacklist();
   const navigate = useNavigate();
   
   const [hosts, setHosts] = useState([
-    'John Doe (Director)',
-    'Jane Smith (HR Manager)',
-    'Robert Chen (IT Dept)',
-    'Sarah Johnson (Operations)',
-    'Admin Desk'
+    'Vaideeswari (Admin)',
+    'Adithiya (Senior HR)',
+    'Sandhiya (HR Executive)',
+    'Monikashree (HR Executive)',
+    'Priyadharshini (HR Executive)',
+    'Agila (IT Team)',
+    'Avinash (Director MD Sir)',
+    'Sandeep (Chief Executive Officer Sir)',
+    'Srisha (SBI)'
   ]);
   
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [newHostName, setNewHostName] = useState('');
+  const [existingVisitorMatch, setExistingVisitorMatch] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showWebcamModal, setShowWebcamModal] = useState(false);
+  const webcamRef = React.useRef(null);
   
   const [formData, setFormData] = useState({
     visitorName: '',
     mobileNumber: '',
     email: '',
-    companyName: '',
+    companyName: 'Forge India Connect Private Limited',
     hostName: '',
     purpose: '',
     visitDate: new Date().toISOString().split('T')[0],
     expectedArrivalTime: '',
     hostNotes: '',
-    status: 'Pending'
+    status: 'Pending',
+    photoUrl: ''
   });
+
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Check for existing visitor when mobile number is typed
+    if (name === 'mobileNumber' && value.length >= 10) {
+      const existing = allVisitors.find(v => v.mobileNumber === value);
+      if (existing) {
+        setExistingVisitorMatch(existing);
+      } else {
+        setExistingVisitorMatch(null);
+      }
+    } else if (name === 'mobileNumber') {
+      setExistingVisitorMatch(null);
+    }
   };
 
+  const fileInputRef = React.useRef(null);
+
+  const uploadFileToCloudinary = async (file) => {
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    setUploading(true);
+
+    const data = new FormData();
+    data.append('photo', file);
+
+    try {
+      const response = await fetch(`http://${networkIp}:5000/api/visitors/upload`, {
+        method: 'POST',
+        body: data,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      setFormData(prev => ({ ...prev, photoUrl: result.url }));
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await uploadFileToCloudinary(file);
+  };
+
+  const handleWebcamCapture = React.useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (imageSrc) {
+      setShowWebcamModal(false);
+      // Convert base64 to File
+      fetch(imageSrc)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], "webcam_capture.jpg", { type: "image/jpeg" });
+          uploadFileToCloudinary(file);
+        });
+    }
+  }, [webcamRef]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (uploading) {
+      alert("Please wait for the photo to finish uploading.");
+      return;
+    }
     if (isBlacklisted(formData.mobileNumber)) {
       alert("Registration Blocked: This mobile number is on the Blacklist.");
       return;
@@ -104,6 +183,39 @@ const VisitorForm = () => {
         </div>
       </div>
 
+      {/* Existing Visitor Alert */}
+      {existingVisitorMatch && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between shadow-sm animate-in slide-in-from-top-2">
+          <div className="flex gap-3">
+            <AlertCircle className="flex-shrink-0 mt-0.5 text-blue-600" size={24} />
+            <div>
+              <p className="font-bold text-blue-900 text-lg">Already Registered Candidate Exists</p>
+              <p className="text-sm text-blue-700 mt-1">
+                A visitor with mobile number <strong>{existingVisitorMatch.mobileNumber}</strong> is already registered in the system as <strong>{existingVisitorMatch.visitorName}</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            {existingVisitorMatch.qrCode && (
+              <button 
+                type="button"
+                onClick={() => setShowQRModal(true)}
+                className="px-4 py-2 bg-white text-blue-700 border border-blue-300 font-bold rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap"
+              >
+                <QrCode size={18} />
+                View QR Pass
+              </button>
+            )}
+            <button 
+              type="button"
+              onClick={() => navigate('/visitors/returning')}
+              className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              Go to Returning Visitor
+            </button>
+          </div>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         
 
@@ -132,9 +244,14 @@ const VisitorForm = () => {
                   name="mobileNumber" 
                   value={formData.mobileNumber} 
                   onChange={handleChange} 
-                  className={inputClassName} 
+                  className={`${inputClassName} ${isBlacklisted(formData.mobileNumber) ? 'border-red-500 bg-red-50 focus:ring-red-500 focus:border-red-500' : ''}`} 
                   placeholder="e.g., 9876543210" 
                 />
+                {isBlacklisted(formData.mobileNumber) && (
+                  <p className="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                    <AlertCircle size={12} /> This number is blacklisted. Registration blocked.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
@@ -142,7 +259,7 @@ const VisitorForm = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} className={inputClassName} placeholder="e.g., Tech Corp" />
+                <input type="text" name="companyName" value={formData.companyName} readOnly className={`${inputClassName} bg-gray-100 text-gray-600 cursor-not-allowed`} />
               </div>
             </div>
           </div>
@@ -180,11 +297,13 @@ const VisitorForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Purpose of Visit *</label>
                 <select required name="purpose" value={formData.purpose} onChange={handleChange} className={`${inputClassName} bg-white`}>
                   <option value="">Select Purpose</option>
-                  <option value="Meeting">Meeting</option>
                   <option value="Interview">Interview</option>
-                  <option value="Delivery">Delivery</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Other">Other</option>
+                  <option value="Follow up">Follow up</option>
+                  <option value="Job consulting">Job consulting</option>
+                  <option value="Banking">Banking</option>
+                  <option value="CEO meeting">CEO meeting</option>
+                  <option value="Visitors">Visitors</option>
+                  <option value="Guest">Guest</option>
                 </select>
               </div>
               <div>
@@ -213,19 +332,62 @@ const VisitorForm = () => {
           </div>
           <div className="p-6 sm:p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer group">
-                <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-100 transition-colors mb-3">
-                  <Camera className="text-gray-400 group-hover:text-blue-600 transition-colors" size={28} />
-                </div>
-                <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Capture / Upload Photo</p>
-                <p className="text-xs text-gray-400 mt-1">Live capture or JPEG/PNG up to 5MB</p>
-              </div>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer group">
-                <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-100 transition-colors mb-3">
-                  <IdCard className="text-gray-400 group-hover:text-blue-600 transition-colors" size={28} />
-                </div>
-                <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Upload ID Proof</p>
-                <p className="text-xs text-gray-400 mt-1">Aadhar, PAN, or Driving License</p>
+              <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-blue-50 hover:border-blue-300 transition-colors group overflow-hidden">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handlePhotoUpload} 
+                  accept="image/*" 
+                  capture="environment"
+                  className="hidden" 
+                />
+                
+                {previewUrl ? (
+                  <>
+                    <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+                    <div className="relative z-10 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-sm mb-2">
+                      {uploading ? (
+                        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Camera className="text-green-600" size={24} />
+                      )}
+                    </div>
+                    <p className="relative z-10 text-sm font-bold text-gray-900 bg-white/80 px-2 py-1 rounded mb-3">
+                      {uploading ? 'Uploading...' : 'Photo Uploaded'}
+                    </p>
+                    <button 
+                      type="button"
+                      onClick={() => setPreviewUrl('')}
+                      className="relative z-10 text-xs font-semibold text-red-600 bg-white/90 px-3 py-1 rounded-full shadow-sm hover:bg-red-50 transition-colors"
+                    >
+                      Clear & Retake
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-100 transition-colors mb-3">
+                      <Camera className="text-gray-400 group-hover:text-blue-600 transition-colors" size={28} />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700 mb-4">Capture Visitor Photo</p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[200px]">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setShowWebcamModal(true); }}
+                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-blue-700 transition-colors shadow-sm"
+                      >
+                        <Camera size={14} /> PC Webcam
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
+                        className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-800 text-xs font-bold py-2 px-3 rounded hover:bg-gray-300 transition-colors shadow-sm"
+                      >
+                        <Upload size={14} /> Upload / Mobile
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -315,6 +477,80 @@ const VisitorForm = () => {
         </div>
       )}
 
+      {/* Webcam Modal */}
+      {showWebcamModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-slate-900 text-white">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Camera size={16} /> Live Webcam Capture
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setShowWebcamModal(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="bg-black flex flex-col items-center justify-center relative">
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                videoConstraints={{ facingMode: "user" }}
+                className="w-full object-cover max-h-[60vh]"
+              />
+            </div>
+            <div className="p-4 bg-slate-50 flex justify-center">
+              <button 
+                type="button"
+                onClick={handleWebcamCapture}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+              >
+                <Camera size={20} /> Snap Photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal for Existing Visitor */}
+      {showQRModal && existingVisitorMatch && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative text-center">
+            <button 
+              type="button"
+              onClick={() => setShowQRModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="mb-4 text-[var(--color-brand-indigo)] flex justify-center">
+              <QrCode size={40} />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Existing Visitor Pass</h2>
+            <p className="text-gray-500 text-sm mb-6">Scan with any phone camera</p>
+            
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm inline-block mb-6">
+              <QRCodeSVG 
+                value={`http://${networkIp}:${window.location.port ? window.location.port : ''}/pass/${existingVisitorMatch.visitId || existingVisitorMatch.id}`} 
+                size={200}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+            
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-2">
+              <p className="font-bold text-[var(--color-brand-indigo)]">{existingVisitorMatch.visitorName}</p>
+              <p className="text-sm text-indigo-700 font-mono mt-1">{existingVisitorMatch.visitId}</p>
+            </div>
+            <p className="text-xs text-gray-400">Status: {existingVisitorMatch.status}</p>
+          </div>
+        </div>
+      )}
 
     </div>
   );

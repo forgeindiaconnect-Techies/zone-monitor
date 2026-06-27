@@ -22,11 +22,15 @@ const ReturningVisitor = () => {
   });
 
   const [hosts] = useState([
-    'John Doe (Director)',
-    'Jane Smith (HR Manager)',
-    'Robert Chen (IT Dept)',
-    'Sarah Johnson (Operations)',
-    'Admin Desk'
+    'Vaideeswari (Admin)',
+    'Adithiya (Senior HR)',
+    'Sandhiya (HR Executive)',
+    'Monikashree (HR Executive)',
+    'Priyadharshini (HR Executive)',
+    'Agila (IT Team)',
+    'Avinash (Director MD Sir)',
+    'Sandeep (Chief Executive Officer Sir)',
+    'Srisha (SBI)'
   ]);
 
   const handleSearch = async (e) => {
@@ -118,17 +122,24 @@ const ReturningVisitor = () => {
             Search Visitor
           </h3>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-            <input 
-              type="text" 
-              placeholder="Enter Mobile Number or Name..." 
-              className={activeInputClassName}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="flex-1">
+              <input 
+                type="text" 
+                placeholder="Enter Mobile Number or Name..." 
+                className={`${activeInputClassName} ${isBlacklisted(searchQuery) ? 'border-red-500 bg-red-50 focus:ring-red-500 focus:border-red-500' : ''}`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {isBlacklisted(searchQuery) && (
+                <p className="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                  <AlertCircle size={12} /> This number is blacklisted. Registration blocked.
+                </p>
+              )}
+            </div>
             <button 
               type="submit"
-              disabled={searchStatus === 'searching'}
-              className="px-6 py-2.5 bg-[var(--color-brand-indigo)] text-white font-medium rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center min-w-[120px]"
+              disabled={searchStatus === 'searching' || isBlacklisted(searchQuery)}
+              className="px-6 py-2.5 bg-[var(--color-brand-indigo)] text-white font-medium rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center min-w-[120px] self-start h-[42px]"
             >
               {searchStatus === 'searching' ? 'Searching...' : 'Search'}
             </button>
@@ -258,11 +269,13 @@ const ReturningVisitor = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Purpose of Visit *</label>
                   <select required name="purpose" value={formData.purpose} onChange={handleInputChange} className={activeInputClassName}>
                     <option value="">Select Purpose</option>
-                    <option value="Meeting">Meeting</option>
                     <option value="Interview">Interview</option>
-                    <option value="Vendor">Vendor / Delivery</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Personal">Personal</option>
+                    <option value="Follow up">Follow up</option>
+                    <option value="Job consulting">Job consulting</option>
+                    <option value="Banking">Banking</option>
+                    <option value="CEO meeting">CEO meeting</option>
+                    <option value="Visitors">Visitors</option>
+                    <option value="Guest">Guest</option>
                   </select>
                 </div>
                 <div>

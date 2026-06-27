@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useVisitors } from '../../context/VisitorContext';
 import { useZones } from '../../context/ZoneContext';
+import { useBranch } from '../../context/BranchContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, QrCode, X } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, QrCode, X, FileText } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const VisitorList = () => {
-  const { visitors, updateVisitorStatus, updateVisitorTracking } = useVisitors();
+  const { visitors, allVisitors, updateVisitorStatus, updateVisitorTracking, networkIp } = useVisitors();
   const { zones } = useZones();
+  const { activeBranch } = useBranch();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitorQR, setSelectedVisitorQR] = useState(null);
@@ -38,6 +40,15 @@ const VisitorList = () => {
     (v.visitorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (v.companyName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const isReturningVisitor = (visitor) => {
+    if (!allVisitors || allVisitors.length === 0) return false;
+    // Check if there is any visit for this profile that occurred BEFORE this specific visit
+    return allVisitors.some(v => 
+      v.profileId === visitor.profileId && 
+      new Date(v.createdAt) < new Date(visitor.createdAt)
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -97,8 +108,22 @@ const VisitorList = () => {
                         {(visitor.visitorName || 'U').charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{visitor.visitorName || 'Unknown'}</p>
-                        <p className="text-xs text-gray-500">{visitor.mobileNumber}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{visitor.visitorName || 'Unknown'}</p>
+                          {isReturningVisitor(visitor) ? (
+                            <span className="text-[9px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Returning</span>
+                          ) : (
+                            <span className="text-[9px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">New</span>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-start mt-0.5 gap-1">
+                          <p className="text-xs text-gray-500">{visitor.mobileNumber}</p>
+                          {activeBranch === 'All Branches' && visitor.branch && (
+                            <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] rounded border border-slate-200 uppercase tracking-wider font-semibold shadow-sm">
+                              📍 {visitor.branch}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -194,7 +219,7 @@ const VisitorList = () => {
             
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm inline-block mb-6">
               <QRCodeSVG 
-                value={`http://${window.location.hostname}:${window.location.port}/pass/${selectedVisitorQR.visitId}`} 
+                value={`http://${networkIp}:${window.location.port ? window.location.port : ''}/pass/${selectedVisitorQR.visitId || selectedVisitorQR.id}`} 
                 size={200}
                 level="H"
                 includeMargin={true}
@@ -260,6 +285,19 @@ const VisitorList = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* Checkout Notes Section */}
+            {selectedVisitorHistory.remarks && selectedVisitorHistory.status === 'Exited' && (
+              <div className="mt-6 bg-orange-50 border border-orange-100 rounded-xl p-4">
+                <h3 className="text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
+                  <FileText size={16} className="text-orange-600" />
+                  Visitor Checkout Notes
+                </h3>
+                <p className="text-sm text-orange-800 bg-white p-3 rounded border border-orange-100 whitespace-pre-wrap">
+                  {selectedVisitorHistory.remarks}
+                </p>
+              </div>
+            )}
             
             <div className="mt-6 flex justify-end">
               <button 

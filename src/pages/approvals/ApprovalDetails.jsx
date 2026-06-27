@@ -159,14 +159,19 @@ const ApprovalDetails = () => {
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b pb-2">
               <FileText size={18} className="text-gray-400" /> Submitted Documents
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="border rounded-lg p-4 bg-slate-50 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Visitor Photo</span>
-                <span className="text-xs bg-indigo-100 text-[var(--color-brand-indigo)] px-2 py-1 rounded">View</span>
-              </div>
-              <div className="border rounded-lg p-4 bg-slate-50 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">ID Proof Document</span>
-                <span className="text-xs bg-indigo-100 text-[var(--color-brand-indigo)] px-2 py-1 rounded">View</span>
+                {visitor.photoUrl ? (
+                  <button 
+                    onClick={() => window.open(visitor.photoUrl, '_blank')}
+                    className="text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-[var(--color-brand-indigo)] px-3 py-1.5 rounded transition-colors cursor-pointer"
+                  >
+                    View Photo
+                  </button>
+                ) : (
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Not Provided</span>
+                )}
               </div>
             </div>
           </div>

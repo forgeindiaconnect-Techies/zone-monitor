@@ -21,6 +21,7 @@ const visitorSchema = new mongoose.Schema({
   qrCode: { type: String },
   approvedBy: { type: String },
   remarks: { type: String },
+  photoUrl: { type: String },
   checkedIn: { type: Boolean, default: false },
   zoneLogs: [{
     zoneName: String,

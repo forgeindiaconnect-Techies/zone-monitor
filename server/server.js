@@ -34,6 +34,22 @@ app.use('/api/zones', zonesRouter);
 app.use('/api/blacklist', blacklistRouter);
 app.use('/api/alerts', alertsRouter);
 
+app.get('/api/network-ip', (req, res) => {
+  const os = require('os');
+  const nets = os.networkInterfaces();
+  let ip = 'localhost';
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        ip = net.address;
+        break;
+      }
+    }
+    if (ip !== 'localhost') break;
+  }
+  res.json({ ip });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
