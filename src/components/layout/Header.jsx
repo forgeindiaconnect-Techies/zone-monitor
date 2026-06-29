@@ -5,7 +5,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { Bell, User, MapPin, Check, Menu } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-const API_URL = `http://${window.location.hostname}:5000/api/notifications`;
+const API_URL = `${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}/api/notifications`;
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   useEffect(() => {
     fetchNotifications();
     
-    const socket = io(`http://${window.location.hostname}:5000`);
+    const socket = io(`${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}`);
     
     socket.on('newNotification', (notification) => {
       // Match the role formats (e.g. "Super Admin" -> "superadmin")

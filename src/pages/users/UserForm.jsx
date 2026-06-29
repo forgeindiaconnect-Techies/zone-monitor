@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
 import { Save, X, User, Mail, Lock, Shield, Building } from 'lucide-react';
 
-const API_URL = `http://${window.location.hostname}:5000/api/users`;
+const API_URL = `${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}/api/users`;
 
 const UserForm = () => {
   const navigate = useNavigate();
