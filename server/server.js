@@ -2,8 +2,27 @@ require('dotenv').config({ path: '../.env' }); // Load .env from root directory
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
+  }
+});
+
+// Attach socket.io to the app so routes can use it
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('⚡ Socket connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('🔌 Socket disconnected:', socket.id);
+  });
+});
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -26,6 +45,7 @@ const authRouter = require('./routes/auth');
 const zonesRouter = require('./routes/zones');
 const blacklistRouter = require('./routes/blacklist');
 const alertsRouter = require('./routes/alerts');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 app.use('/api/visitors', visitorsRouter);
 app.use('/api/users', usersRouter);
@@ -33,6 +53,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/zones', zonesRouter);
 app.use('/api/blacklist', blacklistRouter);
 app.use('/api/alerts', alertsRouter);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/network-ip', (req, res) => {
   const os = require('os');
@@ -51,6 +72,6 @@ app.get('/api/network-ip', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

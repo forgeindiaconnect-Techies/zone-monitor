@@ -28,6 +28,8 @@ import ReportsDashboard from './pages/reports/ReportsDashboard';
 import UserList from './pages/users/UserList';
 import UserForm from './pages/users/UserForm';
 
+import Settings from './pages/settings/Settings';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -74,7 +76,7 @@ const AppRoutes = () => {
         <Route path="tracking" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><EntryExitLogs /></ProtectedRoute>} />
         <Route path="blacklist" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><BlacklistList /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin']}><ReportsDashboard /></ProtectedRoute>} />
-        <Route path="settings" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Visitor']}><div className="p-6">Settings Module (Coming Soon)</div></ProtectedRoute>} />
+        <Route path="settings" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Visitor']}><Settings /></ProtectedRoute>} />
       </Route>
     </Routes>
   );

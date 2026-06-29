@@ -27,7 +27,7 @@ const AdminDashboard = () => {
   // Metrics calculations
   const today = new Date().toISOString().split('T')[0];
   const visitorsToday = visitors.filter(v => v.visitDate === today).length;
-  const pendingApprovals = visitors.filter(v => v.status === 'Pending Admin').length;
+  const pendingApprovals = visitors.filter(v => v.status === 'Pending').length;
   
   // Dummy data for Security Alerts and Zone Violations for MD overview
   const securityAlerts = 2; // Simulated
@@ -77,14 +77,14 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-orange-100">
-                {visitors.filter(v => v.status === 'Pending Admin').map(v => (
+                {visitors.filter(v => v.status === 'Pending').map(v => (
                   <tr key={v.id}>
                     <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{v.purpose}</td>
                     <td className="px-4 py-3 text-right">
                       <button 
-                        onClick={() => updateVisitorStatus(v.id, 'Pending MD', { approvedBy: currentUser?.name })}
+                        onClick={() => updateVisitorStatus(v.id, 'Approved', { approvedBy: currentUser?.name })}
                         className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 mr-2"
                       >
                         Approve

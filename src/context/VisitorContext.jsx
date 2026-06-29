@@ -14,6 +14,7 @@ export const VisitorProvider = ({ children }) => {
   const [allVisitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [networkIp, setNetworkIp] = useState(window.location.hostname);
+  const allVisitorsRef = React.useRef([]);
 
   useEffect(() => {
     // Fetch network IP for mobile QR code scanning
@@ -35,6 +36,20 @@ export const VisitorProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Visitors fetched successfully:', data);
+
+        if (allVisitorsRef.current.length > 0) {
+          const existingIds = new Set(allVisitorsRef.current.map(v => v._id || v.id));
+          const newVisitors = data.filter(v => !(existingIds.has(v._id || v.id)));
+          
+          newVisitors.forEach(nv => {
+            // Only notify if the new visitor is relevant to the active branch view
+            if (activeBranch === 'All Branches' || (nv.branch && nv.branch.includes(activeBranch))) {
+              addNotification('New Visitor Alert', `${nv.visitorName} has been registered at ${nv.branch || 'Facility'}.`, 'info');
+            }
+          });
+        }
+        
+        allVisitorsRef.current = data;
         setVisitors(data);
       } else {
         console.error('Failed to fetch visitors');
@@ -102,7 +117,11 @@ export const VisitorProvider = ({ children }) => {
       
       if (response.ok) {
         const savedVisitor = await response.json();
-        setVisitors(prev => [...prev, savedVisitor]);
+        setVisitors(prev => {
+          const newList = [...prev, savedVisitor];
+          allVisitorsRef.current = newList;
+          return newList;
+        });
         addNotification('Visitor Registered', `${savedVisitor.visitorName} has been pre-registered.`, 'success');
       } else {
         throw new Error('Failed to save to database');
@@ -111,7 +130,11 @@ export const VisitorProvider = ({ children }) => {
       console.error(err);
       // Fallback for when backend is not running
       const fallbackVisitor = { ...newVisitor, id: Date.now().toString() };
-      setVisitors(prev => [...prev, fallbackVisitor]);
+      setVisitors(prev => {
+        const newList = [...prev, fallbackVisitor];
+        allVisitorsRef.current = newList;
+        return newList;
+      });
       addNotification('Visitor Registered (Offline)', `${fallbackVisitor.visitorName} saved locally.`, 'warning');
     }
   };

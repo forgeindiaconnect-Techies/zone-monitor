@@ -27,7 +27,7 @@ const MDDashboard = () => {
   // Metrics calculations
   const today = new Date().toISOString().split('T')[0];
   const visitorsToday = visitors.filter(v => v.visitDate === today).length;
-  const pendingApprovals = visitors.filter(v => v.status === 'Pending MD').length;
+  const pendingApprovals = visitors.filter(v => v.status === 'Pending').length;
   
   // Dummy data for Security Alerts and Zone Violations for MD overview
   const securityAlerts = 2; // Simulated
@@ -78,7 +78,7 @@ const MDDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-orange-100">
-                {visitors.filter(v => v.status === 'Pending MD').map(v => (
+                {visitors.filter(v => v.status === 'Pending').map(v => (
                   <tr key={v.id}>
                     <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>

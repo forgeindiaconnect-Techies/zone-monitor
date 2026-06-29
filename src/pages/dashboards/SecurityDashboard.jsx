@@ -156,13 +156,17 @@ const SecurityDashboard = () => {
                       {calculateTimeSpent(visitor.visitDate, visitor.entryTime, visitor.exitTime, visitor.status)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        visitor.status === 'Approved' ? 'bg-blue-50 text-blue-600' :
+                      <span className={`px-2 py-1 rounded text-xs font-medium flex items-center justify-end gap-1 ${
+                        visitor.status === 'Approved' ? 'bg-green-50 text-green-600' :
+                        visitor.status === 'Rejected' ? 'bg-red-50 text-red-600' :
                         visitor.status === 'Inside' ? 'bg-indigo-50 text-[var(--color-brand-indigo)]' :
                         visitor.status === 'Exited' ? 'bg-gray-100 text-gray-600' :
                         'bg-orange-50 text-orange-600'
                       }`}>
-                        {visitor.status}
+                        {visitor.status} 
+                        {visitor.status === 'Approved' && '✅'}
+                        {visitor.status === 'Pending' && '⏳'}
+                        {visitor.status === 'Rejected' && '❌'}
                       </span>
                     </td>
                   </tr>

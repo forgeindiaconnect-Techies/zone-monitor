@@ -15,7 +15,7 @@ const ReportsDashboard = () => {
   
   // Apply Strict Branch Filtering
   // If the user is assigned to a specific branch, they should ONLY see that branch's data, regardless of their role.
-  const filteredVisitors = user?.branch && user.branch !== 'All'
+  const filteredVisitors = user?.branch && user.branch !== 'All' && user.branch !== 'All Branches'
     ? allVisitors.filter(v => v.branch === user.branch)
     : allVisitors;
 

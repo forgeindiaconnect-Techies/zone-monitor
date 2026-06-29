@@ -1,16 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
-import { Bell, User, MapPin } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
+import { Bell, User, MapPin, Check, Menu } from 'lucide-react';
+import { io } from 'socket.io-client';
 
-const Header = () => {
+const API_URL = `http://${window.location.hostname}:5000/api/notifications`;
+
+const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const { user } = useAuth();
   const { branches, activeBranch, setActiveBranch } = useBranch();
+  const { addNotification } = useNotification();
+  
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(API_URL);
+      if (res.ok) {
+        const data = await res.json();
+        // Filter by user role if needed, and only take unread or recent
+        const userRole = user?.role || 'Admin'; // fallback
+        const relevant = data.filter(n => n.roles.includes(userRole));
+        setNotifications(relevant);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    
+    const socket = io(`http://${window.location.hostname}:5000`);
+    
+    socket.on('newNotification', (notification) => {
+      // Match the role formats (e.g. "Super Admin" -> "superadmin")
+      const currentUserRole = user?.role ? user.role.toLowerCase().replace(/\s/g, '') : '';
+      
+      if (notification.roles.includes(currentUserRole) || notification.roles.includes(user?.role)) {
+        setNotifications(prev => [notification, ...prev]);
+        addNotification(notification.title, notification.message, 'info');
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [user, addNotification]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const markAsRead = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}/read`, { method: 'PATCH' });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      }
+    } catch (err) {
+      console.error('Failed to mark read', err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-64 flex items-center justify-between px-6 z-10 shadow-sm">
-      <div className="flex items-center space-x-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+    <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-0 ${isSidebarOpen ? 'md:left-64' : ''} flex items-center justify-between px-6 z-10 shadow-sm transition-all duration-300`}>
+      <div className="flex items-center space-x-4">
+        {toggleSidebar && (
+          <button 
+            onClick={toggleSidebar}
+            className="text-gray-500 hover:text-[var(--color-brand-indigo)] transition-colors mr-2"
+          >
+            <Menu size={24} />
+          </button>
+        )}
+        <h2 className="text-xl font-semibold text-gray-800 hidden sm:block">
           Welcome back, {user?.name || 'User'}
         </h2>
         
@@ -33,10 +106,58 @@ const Header = () => {
       </div>
       
       <div className="flex items-center space-x-4">
-        <button className="p-2 text-gray-400 hover:text-[var(--color-brand-indigo)] hover:bg-indigo-50 rounded-full transition-colors relative">
-          <Bell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        
+        <div className="relative" ref={dropdownRef}>
+          <button 
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="p-2 text-gray-400 hover:text-[var(--color-brand-indigo)] hover:bg-indigo-50 rounded-full transition-colors relative"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+              <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 className="font-semibold text-gray-700">Notifications</h3>
+                <span className="text-xs text-gray-500">{unreadCount} unread</span>
+              </div>
+              
+              <div className="divide-y divide-gray-100">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500">
+                    No new notifications
+                  </div>
+                ) : (
+                  notifications.map(notification => (
+                    <div 
+                      key={notification._id} 
+                      onClick={() => !notification.isRead && markAsRead(notification._id)}
+                      className={`p-4 transition-colors cursor-pointer ${!notification.isRead ? 'bg-indigo-50/30 hover:bg-indigo-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <div className="flex items-start gap-2 mb-1">
+                        <span className="text-sm mt-0.5">{!notification.isRead ? '🔴' : '⚪'}</span>
+                        <h4 className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
+                          {notification.title}
+                        </h4>
+                      </div>
+                      <p className={`text-xs ml-6 ${!notification.isRead ? 'text-gray-700' : 'text-gray-500'} mb-1`}>
+                        {notification.message}
+                      </p>
+                      <span className="text-[10px] text-gray-400 ml-6">
+                        {new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="h-8 w-px bg-gray-200"></div>
         

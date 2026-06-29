@@ -13,7 +13,11 @@ const visitorSchema = new mongoose.Schema({
   visitDate: { type: String, required: true },
   expectedArrivalTime: { type: String },
   hostNotes: { type: String },
-  status: { type: String, default: 'Pending' },
+  status: { 
+    type: String, 
+    enum: ["Pending", "Approved", "Rejected", "Inside", "Exited"], 
+    default: 'Pending' 
+  },
   branch: { type: String, required: true },
   currentZone: { type: String },
   entryTime: { type: String },

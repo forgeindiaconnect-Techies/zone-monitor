@@ -11,10 +11,11 @@ import {
   Settings,
   LogOut,
   Shield,
-  Activity
+  Activity,
+  X
 } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const role = user?.role || 'Visitor';
 
@@ -35,17 +36,28 @@ const Sidebar = () => {
   const navItems = allNavItems.filter(item => item.roles.includes(role));
 
   return (
-    <aside className="w-64 bg-[var(--color-brand-indigo)] text-white h-screen fixed top-0 left-0 flex flex-col shadow-xl z-20">
-      <div className="h-16 flex items-center justify-center border-b border-white/10">
+    <aside className={`w-64 bg-[var(--color-brand-indigo)] text-white h-screen fixed top-0 left-0 flex flex-col shadow-xl z-20 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
         <h1 className="text-2xl font-bold tracking-wider">ZMVMS</h1>
+        <button 
+          className="md:hidden text-white/70 hover:text-white"
+          onClick={() => setIsOpen(false)}
+        >
+          <X size={24} />
+        </button>
       </div>
-      
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto hide-scrollbar">
+
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             end
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                setIsOpen(false);
+              }
+            }}
             className={({ isActive }) =>
               `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
                 isActive 

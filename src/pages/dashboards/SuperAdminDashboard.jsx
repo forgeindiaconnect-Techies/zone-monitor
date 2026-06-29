@@ -4,6 +4,7 @@ import { useBranch } from '../../context/BranchContext';
 import { useZones } from '../../context/ZoneContext';
 import { Users, UserCheck, Clock, Ban, Building, MapPin, ShieldAlert, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
@@ -18,9 +19,10 @@ const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
 );
 
 const SuperAdminDashboard = () => {
-  const { visitors } = useVisitors();
+  const { visitors, updateVisitorStatus } = useVisitors();
   const { branches, activeBranch } = useBranch();
   const { zones } = useZones();
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
 
   const today = new Date().toISOString().split('T')[0];
@@ -51,12 +53,16 @@ const SuperAdminDashboard = () => {
   ];
   const maxTrend = Math.max(...trendsData.map(d => d.visitors));
 
-  // Branch Performance Data (Dummy for chart)
-  const branchData = branches.map(b => ({
-    name: b,
-    visitors: Math.floor(Math.random() * 100) + 20,
-    efficiency: Math.floor(Math.random() * 30) + 70 // 70-100%
-  }));
+  // Branch Performance Data
+  const branchData = branches.map(b => {
+    const branchVisitors = b === 'All Branches' ? visitors.length : visitors.filter(v => v.branch === b).length;
+    return {
+      name: b,
+      visitors: branchVisitors
+    };
+  });
+  
+  const maxBranchVisitors = Math.max(...branchData.map(b => b.visitors), 1);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -70,6 +76,57 @@ const SuperAdminDashboard = () => {
           <span>Live Feed Active</span>
         </div>
       </div>
+
+      {pendingApprovals > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 shadow-sm mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="text-orange-600" size={24} />
+            <h2 className="text-lg font-bold text-orange-900">Action Required: Pending Approvals ({pendingApprovals})</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm">
+              <thead className="bg-orange-100/50">
+                <tr className="text-orange-800 text-xs uppercase tracking-wider">
+                  <th className="px-4 py-3 font-semibold">Visitor</th>
+                  <th className="px-4 py-3 font-semibold">Host</th>
+                  <th className="px-4 py-3 font-semibold">Branch</th>
+                  <th className="px-4 py-3 font-semibold">Purpose</th>
+                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-orange-100">
+                {visitors.filter(v => v.status === 'Pending').map(v => (
+                  <tr key={v.id}>
+                    <td className="px-4 py-3 font-medium text-gray-900">{v.visitorName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{v.hostName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{v.branch}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{v.purpose}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button 
+                        onClick={() => updateVisitorStatus(v.id, 'Approved', { approvedBy: currentUser?.name })}
+                        className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 mr-2"
+                      >
+                        Approve
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const reason = window.prompt("Reason for rejection:");
+                          if (reason !== null) {
+                            updateVisitorStatus(v.id, 'Rejected', { approvedBy: currentUser?.name, remarks: reason });
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <DashboardCard title="Total Visitors" value={totalVisitors} icon={Users} colorClass="bg-blue-100 text-blue-600" />
@@ -209,7 +266,7 @@ const SuperAdminDashboard = () => {
                 <div className="w-full bg-slate-100 rounded-full h-2.5">
                   <div 
                     className="bg-purple-500 h-2.5 rounded-full" 
-                    style={{ width: `${(branch.visitors / 150) * 100}%` }}
+                    style={{ width: `${(branch.visitors / maxBranchVisitors) * 100}%` }}
                   ></div>
                 </div>
               </div>

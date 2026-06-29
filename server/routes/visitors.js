@@ -5,6 +5,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
 const Visitor = require('../models/Visitor');
 const VisitorProfile = require('../models/VisitorProfile');
+const Notification = require('../models/Notification');
 
 // Configure Multer storage to use Cloudinary
 const storage = new CloudinaryStorage({
@@ -88,6 +89,18 @@ router.post('/', async (req, res) => {
       status: req.body.status || 'Pending'
     });
     const newVisitor = await visitor.save();
+
+    const notification = await Notification.create({
+      title: "New Visitor Registered",
+      message: `${newVisitor.visitorName} has been registered by Security.`,
+      roles: ["admin", "md", "superadmin", "security"],
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('newNotification', notification);
+    }
+
     res.status(201).json(newVisitor);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -115,11 +128,30 @@ router.get('/pass/:visitId', async (req, res) => {
 // Update visitor status/tracking
 router.patch('/:id', async (req, res) => {
   try {
+    const oldVisitor = await Visitor.findById(req.params.id);
     const updatedVisitor = await Visitor.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
+    
+    // Check if status changed to Approved or Rejected
+    if (req.body.status && oldVisitor && oldVisitor.status !== req.body.status) {
+      if (req.body.status === 'Approved' || req.body.status === 'Rejected') {
+        const action = req.body.status === 'Approved' ? 'approved' : 'rejected';
+        const notification = await Notification.create({
+          title: `Visitor ${req.body.status}`,
+          message: `${updatedVisitor.visitorName} has been ${action} by ${req.body.approvedBy || 'Admin'}.`,
+          roles: ["security"]
+        });
+        
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('newNotification', notification);
+        }
+      }
+    }
+
     res.json(updatedVisitor);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -180,6 +212,21 @@ router.patch('/:id/zone', async (req, res) => {
     }
 
     await visitor.save();
+    
+    // Check if visitor has checked out
+    if (status === 'Exited') {
+      const notification = await Notification.create({
+        title: "Visitor Checked Out",
+        message: `${visitor.visitorName} has checked out.`,
+        roles: ["security"]
+      });
+      
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('newNotification', notification);
+      }
+    }
+
     res.json(visitor);
   } catch (err) {
     res.status(400).json({ message: err.message });

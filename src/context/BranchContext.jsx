@@ -5,7 +5,7 @@ const BranchContext = createContext(null);
 
 export const BranchProvider = ({ children }) => {
   const { user } = useAuth();
-  const branches = ['All Branches', 'Bangalore', 'Chennai', 'Krishnagiri', 'Hyderabad', 'Dharmapuri (Palakodu)', 'Thirupathur'];
+  const branches = ['All Branches', 'Bangalore', 'Chennai', 'Krishnagiri', 'Dharmapuri (Palakodu)', 'Thirupathur'];
   const [activeBranch, setActiveBranch] = useState('All Branches');
 
   useEffect(() => {
