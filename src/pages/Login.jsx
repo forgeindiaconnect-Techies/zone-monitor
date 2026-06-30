@@ -114,7 +114,7 @@ const Login = () => {
             disabled={isLoading || isSuccess}
             className={`w-full text-white font-medium py-3 rounded-lg transition-all duration-300 transform shadow-lg flex items-center justify-center space-x-2 ${
               isSuccess 
-                ? 'bg-green-500 shadow-green-500/30' 
+                ? 'bg-[var(--color-brand-indigo)] shadow-indigo-500/30' 
                 : 'bg-[var(--color-brand-indigo)] hover:bg-[var(--color-brand-indigo-light)] hover:-translate-y-1 hover:shadow-indigo-500/40 active:scale-[0.98] shadow-indigo-500/30'
             }`}
           >

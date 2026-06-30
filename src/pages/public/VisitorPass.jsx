@@ -117,20 +117,39 @@ const VisitorPass = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 flex justify-center pb-24">
-      <div className="max-w-md w-full space-y-4">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 flex justify-center pb-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef4ff 0%, #f8fbff 50%, #ffffff 100%)' }}>
+      <style>
+        {`
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .pass-card-animate {
+            animation: fadeUp 0.8s ease forwards;
+          }
+        `}
+      </style>
+      
+      {/* Decorative Circles */}
+      <div className="fixed w-[250px] h-[250px] bg-indigo-500/15 rounded-full -top-20 -left-20 blur-[80px] pointer-events-none"></div>
+      <div className="fixed w-[250px] h-[250px] bg-emerald-500/12 rounded-full -bottom-20 -right-20 blur-[80px] pointer-events-none"></div>
+
+      <div className="max-w-md w-full space-y-4 relative z-10">
         
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 relative z-10 flex flex-col items-center">
+          <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center p-2 mb-3">
+             <img src="/logo.svg" alt="FIC Logo" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-3xl font-black text-[var(--color-brand-indigo)] tracking-tight">FIC VMS</h1>
-          <p className="mt-1 text-sm font-medium text-gray-500 uppercase tracking-widest">Digital Visitor Pass</p>
+          <p className="mt-1 text-sm font-bold text-gray-500 uppercase tracking-widest">Digital Visitor Pass</p>
         </div>
 
         {/* Timeline */}
         {renderTimeline()}
 
         {/* Main Pass Card */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 relative">
+        <div className="bg-white/80 backdrop-blur-[15px] rounded-[20px] shadow-xl overflow-hidden border border-white/50 relative pass-card-animate">
           
           {/* Top Header Background */}
           <div className="h-32 bg-gradient-to-br from-[var(--color-brand-indigo)] to-indigo-900 relative">

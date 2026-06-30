@@ -126,8 +126,8 @@ const VisitorDashboard = () => {
               </h3>
             </div>
             
-            <div className="p-0 overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="p-0 overflow-x-auto pb-2">
+              <table className="w-full text-left border-collapse min-w-max">
                 <thead>
                   <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                     <th className="px-6 py-4 font-medium">Date / Time</th>

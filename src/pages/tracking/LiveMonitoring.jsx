@@ -64,7 +64,7 @@ const LiveMonitoring = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto pb-2">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
@@ -107,7 +107,7 @@ const LiveMonitoring = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">{visitor.hostName}</td>
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm bg-gray-50 px-2 py-1 rounded border border-gray-100 text-gray-800">
+                    <span className="font-mono text-sm bg-gray-50 px-2 py-1 rounded border border-gray-100 text-gray-800 whitespace-nowrap">
                       {visitor.entryTime || '--:--'}
                     </span>
                   </td>

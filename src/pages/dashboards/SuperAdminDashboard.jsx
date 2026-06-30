@@ -83,8 +83,8 @@ const SuperAdminDashboard = () => {
             <Clock className="text-orange-600" size={24} />
             <h2 className="text-lg font-bold text-orange-900">Action Required: Pending Approvals ({pendingApprovals})</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm">
+          <div className="overflow-x-auto pb-2">
+            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm min-w-max">
               <thead className="bg-orange-100/50">
                 <tr className="text-orange-800 text-xs uppercase tracking-wider">
                   <th className="px-4 py-3 font-semibold">Visitor</th>
@@ -146,8 +146,8 @@ const SuperAdminDashboard = () => {
               Recent Visitor Activity
             </h3>
           </div>
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto flex-1 pb-2">
+            <table className="w-full text-left border-collapse min-w-max">
               <thead>
                 <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
                   <th className="px-6 py-4 font-medium">Visitor Name</th>

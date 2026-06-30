@@ -72,8 +72,8 @@ const BranchAdminDashboard = () => {
               <input type="text" placeholder="Search..." className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[var(--color-brand-indigo)]" />
             </div>
           </div>
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto flex-1 pb-2">
+            <table className="w-full text-left border-collapse min-w-max">
               <thead className="bg-slate-50 border-y border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Visitor</th>

@@ -46,12 +46,16 @@ const AdminDashboard = () => {
   ];
   const maxTrend = Math.max(...trendsData.map(d => d.visitors));
 
-  // Branch Performance Data (Dummy for chart)
-  const branchData = branches.map(b => ({
-    name: b,
-    visitors: Math.floor(Math.random() * 100) + 20,
-    efficiency: Math.floor(Math.random() * 30) + 70 // 70-100%
-  }));
+  // Branch Performance Data
+  const branchData = branches.map(b => {
+    const branchVisitors = b === 'All Branches' ? visitors.length : visitors.filter(v => v.branch === b).length;
+    return {
+      name: b,
+      visitors: branchVisitors
+    };
+  });
+  
+  const maxBranchVisitors = Math.max(...branchData.map(b => b.visitors), 1);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -66,8 +70,8 @@ const AdminDashboard = () => {
             <Clock className="text-orange-600" size={24} />
             <h2 className="text-lg font-bold text-orange-900">Action Required: Pending Approvals ({pendingApprovals})</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm">
+          <div className="overflow-x-auto pb-2">
+            <table className="w-full text-left bg-white rounded-lg overflow-hidden shadow-sm min-w-max">
               <thead className="bg-orange-100/50">
                 <tr className="text-orange-800 text-xs uppercase tracking-wider">
                   <th className="px-4 py-3 font-semibold">Visitor</th>
@@ -152,7 +156,7 @@ const AdminDashboard = () => {
                 <div className="w-full bg-slate-100 rounded-full h-2.5">
                   <div 
                     className="bg-purple-500 h-2.5 rounded-full" 
-                    style={{ width: `${(branch.visitors / 150) * 100}%` }}
+                    style={{ width: `${(branch.visitors / maxBranchVisitors) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -169,8 +173,8 @@ const AdminDashboard = () => {
             Recent Visitor Activity
           </h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto pb-2">
+          <table className="w-full text-left border-collapse min-w-max">
             <thead>
               <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
                 <th className="px-6 py-4 font-medium">Visitor Name</th>

@@ -44,14 +44,14 @@ const SecurityDashboard = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Security Checkpoint Dashboard</h1>
-          <p className="text-gray-500 mt-1">Live operational terminal for <span className="font-semibold text-gray-700">{activeBranch}</span></p>
+        <div className="w-full sm:w-auto">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Security Checkpoint Dashboard</h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Live operational terminal for <span className="font-semibold text-gray-700">{activeBranch}</span></p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex w-full sm:w-auto">
           <button 
             onClick={() => navigate('/tracking')}
-            className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
+            className="w-full sm:w-auto justify-center px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
           >
             <ShieldAlert size={18} />
             Zone Tracker
@@ -123,8 +123,8 @@ const SecurityDashboard = () => {
               />
             </div>
           </div>
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto flex-1 pb-2">
+            <table className="w-full text-left border-collapse min-w-max">
               <thead>
                 <tr className="bg-white text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                   <th className="px-6 py-4 font-medium">Visitor</th>

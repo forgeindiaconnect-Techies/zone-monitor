@@ -73,12 +73,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-0 ${isSidebarOpen ? 'md:left-64' : ''} flex items-center justify-between px-6 z-10 shadow-sm transition-all duration-300`}>
-      <div className="flex items-center space-x-4">
+    <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-0 ${isSidebarOpen ? 'md:left-64' : ''} flex items-center justify-between px-4 sm:px-6 z-10 shadow-sm transition-all duration-300`}>
+      <div className="flex items-center space-x-2 sm:space-x-4">
         {toggleSidebar && (
           <button 
             onClick={toggleSidebar}
-            className="text-gray-500 hover:text-[var(--color-brand-indigo)] transition-colors mr-2"
+            className="text-gray-500 hover:text-[var(--color-brand-indigo)] transition-colors mr-1 sm:mr-2"
           >
             <Menu size={24} />
           </button>
@@ -87,13 +87,13 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
           Welcome back, {user?.name || 'User'}
         </h2>
         
-        <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-gray-200">
-          <MapPin size={16} className="text-[var(--color-brand-indigo)]" />
+        <div className="flex items-center space-x-1 sm:space-x-2 bg-slate-50 px-2 sm:px-3 py-1.5 rounded-lg border border-gray-200">
+          <MapPin size={16} className="text-[var(--color-brand-indigo)] shrink-0" />
           {['Super Admin'].includes(user?.role) ? (
             <select 
               value={activeBranch} 
               onChange={(e) => setActiveBranch(e.target.value)}
-              className="bg-transparent outline-none text-sm font-medium text-gray-700 cursor-pointer w-40"
+              className="bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-700 cursor-pointer w-24 sm:w-40"
             >
               {branches.map(b => (
                 <option key={b} value={b}>{b}</option>
@@ -162,10 +162,10 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         <div className="h-8 w-px bg-gray-200"></div>
         
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-full bg-[var(--color-brand-indigo)] text-white flex items-center justify-center font-bold">
+          <div className="w-9 h-9 shrink-0 rounded-full bg-[var(--color-brand-indigo)] text-white flex items-center justify-center font-bold">
             {user?.name?.charAt(0) || <User size={18} />}
           </div>
-          <div className="flex flex-col">
+          <div className="hidden sm:flex flex-col">
             <span className="text-sm font-medium text-gray-700">{user?.name || 'Admin'}</span>
             <span className="text-xs text-gray-500">{user?.role || 'Role'}</span>
           </div>

@@ -12,8 +12,8 @@ router.post('/login', async (req, res) => {
     }
 
     // Special hardcoded bootstrap admin to prevent lockout
-    if (email === 'admin@example.com' && password === '123456') {
-      return res.json({ id: 'bootstrap-admin', name: 'Super Admin', email: 'admin@example.com', role: 'Super Admin', branch: 'All Branches' });
+    if (email === 'sandeep@fic.com' && password === 'sandeep') {
+      return res.json({ id: 'bootstrap-admin', name: 'Sandeep', email: 'sandeep@fic.com', role: 'Super Admin', branch: 'All Branches' });
     }
     if (email === 'md@example.com' && password === '123456') {
       return res.json({ id: 'bootstrap-md', name: 'Managing Director', email: 'md@example.com', role: 'MD', branch: 'All Branches' });

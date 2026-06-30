@@ -80,8 +80,8 @@ const UserList = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-slate-50 flex justify-between items-center">
-          <div className="relative w-72">
+        <div className="p-4 border-b border-gray-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text" 
@@ -96,8 +96,8 @@ const UserList = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto pb-2">
+          <table className="w-full text-left border-collapse min-w-max">
             <thead>
               <tr className="bg-white border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">Name & Email</th>

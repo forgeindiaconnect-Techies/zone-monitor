@@ -39,7 +39,8 @@ const ReturningVisitor = () => {
 
     setSearchStatus('searching');
     try {
-      const res = await fetch(`http://localhost:5000/api/visitors/profile/${searchQuery}`);
+      const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`;
+      const res = await fetch(`${API_URL}/api/visitors/profile/${searchQuery}`);
       
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       
