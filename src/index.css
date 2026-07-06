@@ -100,3 +100,35 @@ body {
 .animate-fade-out {
   animation: fadeOut 0.5s ease-in-out forwards;
 }
+
+@media print {
+  /* Hide sidebar and header during printing */
+  aside, header {
+    display: none !important;
+  }
+  
+  /* Reset margins for main content */
+  .md\:ml-64, main {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    overflow: visible !important;
+  }
+  
+  /* Ensure background is white and text is black */
+  body, html {
+    background-color: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Fix table clipping */
+  .overflow-x-auto, .overflow-y-auto {
+    overflow: visible !important;
+  }
+}
+
+/* Remove default MS Edge password reveal icon */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

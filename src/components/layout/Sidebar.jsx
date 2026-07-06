@@ -12,7 +12,8 @@ import {
   LogOut,
   Shield,
   Activity,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -21,15 +22,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const allNavItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security', 'Visitor'] },
-    { name: 'Live Monitoring', path: '/live-monitoring', icon: <Activity size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
-    { name: 'New Visitor', path: '/visitors/new', icon: <Users size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
-    { name: 'Returning Visitor', path: '/visitors/returning', icon: <Users size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
     { name: 'All Visitors', path: '/visitors', icon: <Users size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
     { name: 'User Management', path: '/users', icon: <Shield size={20} />, roles: ['Super Admin'] },
     { name: 'Approvals', path: '/approvals', icon: <CheckSquare size={20} />, roles: ['Super Admin', 'MD', 'Admin'] },
-    { name: 'Zones', path: '/zones', icon: <Map size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
     { name: 'Blacklist', path: '/blacklist', icon: <Ban size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
     { name: 'Reports', path: '/reports', icon: <FileText size={20} />, roles: ['Super Admin', 'MD', 'Admin'] },
+    { name: 'Attendance', path: '/attendance', icon: <Clock size={20} />, roles: ['Super Admin', 'MD', 'Admin'] },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Visitor'] },
   ];
 

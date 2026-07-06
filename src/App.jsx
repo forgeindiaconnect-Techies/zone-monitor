@@ -6,6 +6,7 @@ import { ZoneProvider } from './context/ZoneContext';
 import { BlacklistProvider } from './context/BlacklistContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { BranchProvider } from './context/BranchContext';
+import { AttendanceProvider } from './context/AttendanceContext';
 import ToastContainer from './components/notifications/ToastContainer';
 
 // Layouts
@@ -27,7 +28,7 @@ import BlacklistList from './pages/blacklist/BlacklistList';
 import ReportsDashboard from './pages/reports/ReportsDashboard';
 import UserList from './pages/users/UserList';
 import UserForm from './pages/users/UserForm';
-
+import AttendanceLog from './pages/tracking/AttendanceLog';
 import Settings from './pages/settings/Settings';
 
 // Protected Route Component
@@ -74,6 +75,7 @@ const AppRoutes = () => {
         <Route path="live-monitoring" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><LiveMonitoring /></ProtectedRoute>} />
         <Route path="zones" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><ZoneList /></ProtectedRoute>} />
         <Route path="tracking" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><EntryExitLogs /></ProtectedRoute>} />
+        <Route path="attendance" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin']}><AttendanceLog /></ProtectedRoute>} />
         <Route path="blacklist" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Security']}><BlacklistList /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin']}><ReportsDashboard /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute allowedRoles={['Super Admin', 'MD', 'Admin', 'Visitor']}><Settings /></ProtectedRoute>} />
@@ -87,16 +89,18 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <BranchProvider>
-          <VisitorProvider>
-            <ZoneProvider>
-              <BlacklistProvider>
-                <Router>
-                  <AppRoutes />
-                  <ToastContainer />
-                </Router>
-              </BlacklistProvider>
-            </ZoneProvider>
-          </VisitorProvider>
+          <AttendanceProvider>
+            <VisitorProvider>
+              <ZoneProvider>
+                <BlacklistProvider>
+                  <Router>
+                    <AppRoutes />
+                    <ToastContainer />
+                  </Router>
+                </BlacklistProvider>
+              </ZoneProvider>
+            </VisitorProvider>
+          </AttendanceProvider>
         </BranchProvider>
       </NotificationProvider>
     </AuthProvider>

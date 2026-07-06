@@ -46,6 +46,8 @@ const zonesRouter = require('./routes/zones');
 const blacklistRouter = require('./routes/blacklist');
 const alertsRouter = require('./routes/alerts');
 const notificationRoutes = require('./routes/notificationRoutes');
+const attendanceRouter = require('./routes/attendance');
+const branchSettingsRouter = require('./routes/branchSettings');
 
 app.use('/api/visitors', visitorsRouter);
 app.use('/api/users', usersRouter);
@@ -54,6 +56,8 @@ app.use('/api/zones', zonesRouter);
 app.use('/api/blacklist', blacklistRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/branch-settings', branchSettingsRouter);
 
 app.get('/api/network-ip', (req, res) => {
   const os = require('os');

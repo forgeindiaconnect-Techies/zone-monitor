@@ -22,20 +22,41 @@ const ReportsDashboard = () => {
   const [activeTab, setActiveTab] = useState('visitor');
   const [selectedZone, setSelectedZone] = useState(null);
 
-  // Generic CSV Exporter
-  const exportCSV = (data, filename) => {
+  // User-Friendly Excel (.xls) Exporter
+  const exportExcel = (data, filename) => {
     if (!data || !data.length) return alert("No data to export!");
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(obj => Object.values(obj).map(val => `"${val}"`).join(',')).join('\n');
-    const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+    const headers = Object.keys(data[0]);
     
-    const encodedUri = encodeURI(csvContent);
+    // Create an HTML table with basic styling that Excel can interpret perfectly
+    let tableHTML = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+    tableHTML += '<head><meta charset="UTF-8"></head><body>';
+    tableHTML += '<table border="1" style="font-family: Arial, sans-serif;">';
+    
+    // Header Row with Brand Colors
+    tableHTML += '<tr>' + headers.map(h => `<th style="background-color:#1E1B6E; color:white; font-weight:bold; padding:10px;">${h}</th>`).join('') + '</tr>';
+    
+    // Data Rows
+    data.forEach(row => {
+      tableHTML += '<tr>' + headers.map(h => {
+        const val = row[h] !== null && row[h] !== undefined ? row[h] : '';
+        return `<td style="padding:5px;">${val}</td>`;
+      }).join('') + '</tr>';
+    });
+    
+    tableHTML += '</table></body></html>';
+    
+    // Create a Blob with the Excel MIME type
+    const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("href", url);
+    // Use .xls extension to force it to open in Excel instead of Notepad
+    link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const exportPDF = () => {
@@ -154,7 +175,7 @@ const ReportsDashboard = () => {
         </div>
         <div className="flex space-x-3">
           <button 
-            onClick={() => exportCSV(activeTab === 'security' ? [
+            onClick={() => exportExcel(activeTab === 'security' ? [
               { "Total Visitors": totalVisitors, "Approved": approvedVisitors, "Rejected": rejectedVisitors, "Inside": insideVisitors, "Checked Out": checkedOutVisitors }
             ] : getActiveData(), `${activeTab}_report`)}
             className="px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 font-medium rounded-lg transition-colors flex items-center space-x-2 border border-green-200"

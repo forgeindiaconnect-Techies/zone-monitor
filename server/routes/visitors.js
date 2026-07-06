@@ -34,7 +34,23 @@ router.post('/upload', upload.single('photo'), (req, res) => {
 // Get all visitors
 router.get('/', async (req, res) => {
   try {
-    const visitors = await Visitor.find();
+    let query = {};
+    if (req.query.branch) {
+      const branchUpper = req.query.branch.toUpperCase();
+      
+      // Map new branch names to legacy test data
+      let searchRegexStr = req.query.branch;
+      if (branchUpper.includes('THIRUPATTUR')) {
+        searchRegexStr = `${req.query.branch}|Tirupattur`;
+      } else if (branchUpper.includes('KRISHNAGIRI')) {
+        searchRegexStr = `${req.query.branch}|Salem`;
+      } else if (branchUpper === 'BANGALORE') {
+        searchRegexStr = `${req.query.branch}|Bangalore`;
+      }
+      
+      query.branch = { $regex: new RegExp(`^(${searchRegexStr})$`, 'i') };
+    }
+    const visitors = await Visitor.find(query).sort({ createdAt: -1 });
     res.json(visitors);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -77,7 +93,8 @@ router.post('/', async (req, res) => {
     const visitId = `VISIT${nextNum}`;
     
     // 3. Generate QR Code URL
-    const qrCode = `http://${req.hostname}:5173/pass/${visitId}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const qrCode = `${frontendUrl}/pass/${visitId}`;
     
     // 4. Save the Visit Record
     const visitor = new Visitor({
@@ -94,6 +111,7 @@ router.post('/', async (req, res) => {
       title: "New Visitor Registered",
       message: `${newVisitor.visitorName} has been registered by Security.`,
       roles: ["admin", "md", "superadmin", "security"],
+      branch: newVisitor.branch
     });
 
     const io = req.app.get('io');
@@ -142,7 +160,8 @@ router.patch('/:id', async (req, res) => {
         const notification = await Notification.create({
           title: `Visitor ${req.body.status}`,
           message: `${updatedVisitor.visitorName} has been ${action} by ${req.body.approvedBy || 'Admin'}.`,
-          roles: ["security"]
+          roles: ["admin", "md", "superadmin", "security"],
+          branch: updatedVisitor.branch
         });
         
         const io = req.app.get('io');
@@ -218,7 +237,8 @@ router.patch('/:id/zone', async (req, res) => {
       const notification = await Notification.create({
         title: "Visitor Checked Out",
         message: `${visitor.visitorName} has checked out.`,
-        roles: ["security"]
+        roles: ["admin", "md", "superadmin", "security"],
+        branch: visitor.branch
       });
       
       const io = req.app.get('io');

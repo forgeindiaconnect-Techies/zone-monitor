@@ -31,8 +31,17 @@ export const VisitorProvider = ({ children }) => {
   // Fetch visitors from backend
   const fetchVisitors = async () => {
     try {
-      console.log('Fetching visitors from API...', API_URL);
-      const response = await fetch(API_URL, { cache: 'no-store' });
+      let queryBranch = currentUser?.branch;
+      if (currentUser?.role === 'Super Admin') {
+        queryBranch = activeBranch === 'All Branches' ? null : activeBranch;
+      }
+      
+      const fetchUrl = queryBranch && queryBranch !== 'All Branches' 
+        ? `${API_URL}?branch=${encodeURIComponent(queryBranch)}` 
+        : API_URL;
+      
+      console.log('Fetching visitors from API...', fetchUrl);
+      const response = await fetch(fetchUrl, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         console.log('Visitors fetched successfully:', data);
@@ -86,13 +95,22 @@ export const VisitorProvider = ({ children }) => {
     // Auto-refresh data every 5 seconds so Admin dashboard updates in real-time
     const interval = setInterval(fetchVisitors, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeBranch, currentUser]);
 
   const visitors = React.useMemo(() => {
     // If not restricted (Super Admin) and 'All Branches' is selected
     if (activeBranch === 'All Branches') return allVisitors;
     // Otherwise return visitors matching the active branch
-    return allVisitors.filter(v => v.branch && v.branch.includes(activeBranch));
+    return allVisitors.filter(v => {
+      if (!v.branch) return false;
+      const vBranchUpper = v.branch.toUpperCase();
+      const activeUpper = activeBranch.toUpperCase();
+      if (vBranchUpper === activeUpper) return true;
+      if (activeUpper.includes('THIRUPATTUR') && vBranchUpper === 'TIRUPATTUR') return true;
+      if (activeUpper.includes('KRISHNAGIRI') && vBranchUpper === 'SALEM') return true;
+      if (activeUpper === 'BANGALORE' && vBranchUpper === 'BANGALORE') return true;
+      return false;
+    });
   }, [allVisitors, activeBranch]);
 
   const addVisitor = async (visitorData) => {
@@ -171,6 +189,29 @@ export const VisitorProvider = ({ children }) => {
     }
   };
 
+  const updateVisitor = async (id, updates) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      
+      if (response.ok) {
+        const updatedVisitor = await response.json();
+        setVisitors(prev => prev.map(v => String(v._id || v.id) === String(id) ? updatedVisitor : v));
+        addNotification('Visitor Updated', 'Visitor details updated successfully', 'success');
+        return true;
+      } else {
+         throw new Error('API Update failed');
+      }
+    } catch (err) {
+      console.error(err);
+      addNotification('Update Failed', 'Failed to update visitor details', 'error');
+      return false;
+    }
+  };
+
   const updateVisitorTracking = async (id, trackingData) => {
     try {
       const response = await fetch(`${API_URL}/${id}/zone`, {
@@ -205,7 +246,7 @@ export const VisitorProvider = ({ children }) => {
   }, [allVisitors]);
 
   return (
-    <VisitorContext.Provider value={{ visitors, allVisitors, addVisitor, updateVisitorStatus, updateVisitorTracking, loading, networkIp }}>
+    <VisitorContext.Provider value={{ visitors, allVisitors, addVisitor, updateVisitorStatus, updateVisitorTracking, updateVisitor, loading, networkIp }}>
       {children}
     </VisitorContext.Provider>
   );

@@ -16,14 +16,30 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
+  const getNormalizedRole = (role) => {
+    if (!role) return 'admin';
+    if (role === 'Branch Admin') return 'admin';
+    return role.toLowerCase().replace(/\s/g, '');
+  };
+
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(API_URL);
+      let queryBranch = user?.branch;
+      if (user?.role === 'Super Admin') {
+        queryBranch = activeBranch === 'All Branches' ? null : activeBranch;
+      }
+      const fetchUrl = queryBranch && queryBranch !== 'All Branches'
+        ? `${API_URL}?branch=${encodeURIComponent(queryBranch)}` 
+        : API_URL;
+      
+      const res = await fetch(fetchUrl);
       if (res.ok) {
         const data = await res.json();
-        // Filter by user role if needed, and only take unread or recent
-        const userRole = user?.role || 'Admin'; // fallback
-        const relevant = data.filter(n => n.roles.includes(userRole));
+        const normalizedRole = getNormalizedRole(user?.role);
+        const relevant = data.filter(n => {
+          const roles = n.roles || [];
+          return roles.includes(normalizedRole) || (user?.role && roles.includes(user.role));
+        });
         setNotifications(relevant);
       }
     } catch (err) {
@@ -37,17 +53,27 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const socket = io(`${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}`);
     
     socket.on('newNotification', (notification) => {
-      // Match the role formats (e.g. "Super Admin" -> "superadmin")
-      const currentUserRole = user?.role ? user.role.toLowerCase().replace(/\s/g, '') : '';
+      let queryBranch = user?.branch;
+      if (user?.role === 'Super Admin') {
+        queryBranch = activeBranch === 'All Branches' ? null : activeBranch;
+      }
       
-      if (notification.roles.includes(currentUserRole) || notification.roles.includes(user?.role)) {
+      // Ignore notifications that don't belong to the expected branch context
+      if (queryBranch && queryBranch !== 'All Branches' && notification.branch && notification.branch !== queryBranch) {
+        return;
+      }
+
+      const normalizedRole = getNormalizedRole(user?.role);
+      const roles = notification.roles || [];
+      
+      if (roles.includes(normalizedRole) || (user?.role && roles.includes(user.role))) {
         setNotifications(prev => [notification, ...prev]);
         addNotification(notification.title, notification.message, 'info');
       }
     });
 
     return () => socket.disconnect();
-  }, [user, addNotification]);
+  }, [user, activeBranch, addNotification]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

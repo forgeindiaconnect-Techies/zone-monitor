@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../context/NotificationContext';
 import { useVisitors } from '../../context/VisitorContext';
 import { useBranch } from '../../context/BranchContext';
-import { Users, UserCheck, QrCode, ShieldAlert, Ban, Search, Clock, AlertTriangle, FileText, Settings } from 'lucide-react';
+import { Users, UserCheck, QrCode, ShieldAlert, Ban, Search, Clock, AlertTriangle, FileText, Settings, Camera } from 'lucide-react';
+import Webcam from 'react-webcam';
 import { useNavigate } from 'react-router-dom';
 import { calculateTimeSpent } from '../../utils/timeUtils';
+import { useAttendance } from '../../context/AttendanceContext';
 
 const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
@@ -20,8 +23,116 @@ const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
 const SecurityDashboard = () => {
   const { visitors } = useVisitors();
   const { activeBranch } = useBranch();
+  const { attendance, checkIn, checkOut } = useAttendance();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const { addNotification } = useNotification();
+  
+  // Webcam and Location state
+  const webcamRef = React.useRef(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [webcamAction, setWebcamAction] = useState(null); // 'checkIn' or 'checkOut'
+  const [currentLocation, setCurrentLocation] = useState(null);
+
+  // Hardcoded branch settings as requested
+  const getBranchSettings = (branchName) => {
+    // Only Krishnagiri has strict settings for now
+    if (branchName.toUpperCase().includes('KRISHNAGIRI') || branchName.toUpperCase() === 'SALEM') { // Salem legacy mapped to Krishnagiri previously? Actually Krishnagiri is the new branch.
+      return {
+        branchName: 'Krishnagiri',
+        latitude: 12.5269722,
+        longitude: 78.2025000,
+        radius: 50,
+        checkInStart: '09:00',
+        checkInEnd: '09:30',
+        checkOutTime: '20:00'
+      };
+    }
+    // Default fallback for other branches (no strict GPS or time if not specified)
+    return null;
+  };
+
+  const branchSettings = getBranchSettings(activeBranch);
+
+  // Haversine formula to calculate distance between two coordinates in meters
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+    
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    
+    return R * c; // in metres
+  };
+
+  const handleCapture = React.useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setCapturedPhoto(imageSrc);
+  }, [webcamRef]);
+
+  const handleConfirmPhoto = () => {
+    if (webcamAction === 'checkIn') {
+      checkIn(capturedPhoto, currentLocation);
+    } else if (webcamAction === 'checkOut') {
+      checkOut(capturedPhoto, currentLocation);
+    }
+    setShowWebcam(false);
+    setCapturedPhoto(null);
+    setWebcamAction(null);
+  };
+
+  const openWebcam = (action) => {
+    if (!branchSettings) {
+      // If no strict settings, just open webcam directly
+      setWebcamAction(action);
+      setShowWebcam(true);
+      setCapturedPhoto(null);
+      return;
+    }
+
+    const now = new Date();
+    const currentTimeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    // Time constraint check for Check-In
+    if (action === 'checkIn') {
+      if (currentTimeStr < branchSettings.checkInStart || currentTimeStr > branchSettings.checkInEnd) {
+        addNotification('Check-In Closed', `Allowed time: ${branchSettings.checkInStart} - ${branchSettings.checkInEnd}`, 'error');
+        return;
+      }
+    }
+
+    // Geolocation check
+    if (!navigator.geolocation) {
+      addNotification('Error', 'Geolocation is not supported by your browser', 'error');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      setCurrentLocation({ lat, lng });
+
+      const distance = getDistance(lat, lng, branchSettings.latitude, branchSettings.longitude);
+      
+      if (distance > branchSettings.radius) {
+        addNotification('Location Error', `You are outside the allowed branch location (${Math.round(distance)}m away). Please move within ${branchSettings.radius} meters of ${activeBranch}.`, 'error');
+        return;
+      }
+
+      setWebcamAction(action);
+      setShowWebcam(true);
+      setCapturedPhoto(null);
+    }, (err) => {
+      addNotification('Location Error', 'Failed to get your location. Please enable GPS permissions.', 'error');
+    });
+  };
 
   // Metrics
   const today = new Date().toISOString().split('T')[0];
@@ -69,8 +180,146 @@ const SecurityDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         
-        {/* Quick Verification Panel */}
+        {/* Left Column: Attendance, Quick Verification, Security Tools */}
         <div className="lg:col-span-1 space-y-6">
+          
+          {/* Daily Attendance Card */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Daily Attendance</h3>
+              <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                Date: {today.split('-').reverse().join('-')}
+              </span>
+            </div>
+            
+            <div className="space-y-4">
+              {showWebcam ? (
+                <div className="space-y-3">
+                  {!capturedPhoto ? (
+                    <>
+                      <div className="rounded-lg overflow-hidden border-2 border-[var(--color-brand-indigo)] bg-black">
+                        <Webcam
+                          audio={false}
+                          ref={webcamRef}
+                          screenshotFormat="image/jpeg"
+                          className="w-full h-auto"
+                          videoConstraints={{ facingMode: "user" }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setShowWebcam(false);
+                            setWebcamAction(null);
+                          }}
+                          className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={handleCapture}
+                          className="flex-1 py-2 bg-[var(--color-brand-indigo)] hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                          <Camera size={16} /> Capture
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-lg overflow-hidden border-2 border-green-500">
+                        <img src={capturedPhoto} alt="Captured" className="w-full h-auto" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setCapturedPhoto(null)}
+                          className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
+                        >
+                          Retake
+                        </button>
+                        <button 
+                          onClick={handleConfirmPhoto}
+                          className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors shadow-sm flex items-center justify-center gap-2 text-sm"
+                        >
+                          Confirm & {webcamAction === 'checkIn' ? 'Check In' : 'Check Out'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : !attendance ? (
+                <>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-500">Status:</span>
+                    <span className="font-bold text-gray-700">Not Checked In</span>
+                  </div>
+                  <button 
+                    onClick={() => openWebcam('checkIn')}
+                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-colors shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <Camera size={18} />
+                    Open Camera to Check In
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center bg-green-50 text-green-700 px-3 py-2 rounded-lg font-medium">
+                      <span>Status:</span>
+                      <span>Present</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">Check In:</span>
+                      <span className="font-bold text-gray-900">{attendance.checkInTime}</span>
+                    </div>
+                    {attendance.checkInPhoto && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 flex items-center gap-1"><Camera size={14} /> Photo:</span>
+                        <span className="text-green-600 text-xs font-bold flex items-center gap-1">✔ Captured</span>
+                      </div>
+                    )}
+                    
+                    {attendance.checkOutTime && (
+                      <>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <span className="text-gray-500">Check Out:</span>
+                          <span className="font-bold text-gray-900">{attendance.checkOutTime}</span>
+                        </div>
+                        {attendance.checkOutPhoto && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1"><Camera size={14} /> Photo:</span>
+                            <span className="text-green-600 text-xs font-bold flex items-center gap-1">✔ Captured</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {attendance.workingHours && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span className="text-gray-500">Working Hours:</span>
+                        <span className="font-bold text-[var(--color-brand-indigo)]">{attendance.workingHours}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    {attendance.status === 'Completed' ? (
+                      <div className="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-center border border-gray-200">
+                        Attendance Completed
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => openWebcam('checkOut')}
+                        className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Camera size={18} />
+                        Open Camera to Check Out
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 border-t-4 border-t-[var(--color-brand-indigo)]">
             <h3 className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-wider">Quick Operations</h3>
             
@@ -123,7 +372,7 @@ const SecurityDashboard = () => {
               />
             </div>
           </div>
-          <div className="overflow-x-auto flex-1 pb-2">
+          <div className="overflow-x-auto hide-scrollbar flex-1 pb-2">
             <table className="w-full text-left border-collapse min-w-max">
               <thead>
                 <tr className="bg-white text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">

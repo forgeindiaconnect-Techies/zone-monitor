@@ -3,22 +3,28 @@ import { useVisitors } from '../../context/VisitorContext';
 import { useZones } from '../../context/ZoneContext';
 import { useBranch } from '../../context/BranchContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, QrCode, X, FileText } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, QrCode, X, FileText, Edit, Save } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const VisitorList = () => {
-  const { visitors, allVisitors, updateVisitorStatus, updateVisitorTracking, networkIp } = useVisitors();
+  const { visitors, allVisitors, updateVisitorStatus, updateVisitorTracking, updateVisitor, networkIp } = useVisitors();
   const { zones } = useZones();
   const { activeBranch } = useBranch();
   const { addNotification } = useNotification();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitorQR, setSelectedVisitorQR] = useState(null);
   const [selectedVisitorHistory, setSelectedVisitorHistory] = useState(null);
   const [selectedVisitorUpdateZone, setSelectedVisitorUpdateZone] = useState(null);
+  const [selectedVisitorEdit, setSelectedVisitorEdit] = useState(null);
   const [selectedZone, setSelectedZone] = useState('');
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('');
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -38,10 +44,13 @@ const VisitorList = () => {
     }
   };
 
-  const filteredVisitors = visitors.filter(v => 
-    (v.visitorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (v.companyName || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVisitors = visitors.filter(v => {
+    const matchesSearch = (v.visitorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (v.companyName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || v.status === statusFilter;
+    const matchesDate = !dateFilter || v.visitDate === dateFilter;
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const isReturningVisitor = (visitor) => {
     if (!allVisitors || allVisitors.length === 0) return false;
@@ -82,10 +91,51 @@ const VisitorList = () => {
               className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-transparent outline-none text-sm"
             />
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium">
-            <Filter size={18} />
-            <span>Filters</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <input 
+              type="date" 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-indigo)]"
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => setDateFilter('')}
+                className="text-gray-400 hover:text-gray-600"
+                title="Clear Date Filter"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center space-x-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${isFilterOpen || statusFilter !== 'All' ? 'border-[var(--color-brand-indigo)] text-[var(--color-brand-indigo)] bg-indigo-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Filter size={18} />
+              <span>{statusFilter !== 'All' ? statusFilter : 'Filters'}</span>
+            </button>
+            
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                <div className="p-2 space-y-1">
+                  {['All', 'Pending', 'Approved', 'Inside', 'Exited', 'Rejected'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setIsFilterOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm rounded-lg transition-colors ${statusFilter === status ? 'bg-indigo-50 text-[var(--color-brand-indigo)] font-semibold' : 'text-gray-700 hover:bg-slate-50'}`}
+                    >
+                      {status === 'All' ? 'All Statuses' : status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto min-h-[400px] w-full">
@@ -166,21 +216,27 @@ const VisitorList = () => {
                       {openDropdownId === visitor.id && (
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 z-50">
                           <div className="py-1">
-                            <button onClick={() => { updateVisitorStatus(visitor.id, 'Inside'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">Mark as Inside</button>
-                            <button onClick={() => { updateVisitorStatus(visitor.id, 'Exited'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">Mark as Exited</button>
-                            <button onClick={() => { setSelectedVisitorUpdateZone(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-indigo-600 font-medium hover:bg-slate-50 border-t border-gray-100">Update Zone</button>
-                            <button onClick={() => { updateVisitorStatus(visitor.id, 'Approved'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-slate-50 border-t border-gray-100">Approve</button>
-                            <button onClick={() => { updateVisitorStatus(visitor.id, 'Rejected'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50">Reject</button>
-                            {visitor.qrCode && (
+                            <button onClick={() => { setSelectedVisitorEdit(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 font-medium hover:bg-slate-50 flex items-center gap-2">
+                              <Edit size={14} /> Edit Details
+                            </button>
+                            {user?.role !== 'Security' && (
                               <>
+                                <button onClick={() => { updateVisitorStatus(visitor.id, 'Inside'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 border-t border-gray-100">Mark as Inside</button>
+                                <button onClick={() => { updateVisitorStatus(visitor.id, 'Exited'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">Mark as Exited</button>
+                                <button onClick={() => { setSelectedVisitorUpdateZone(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-indigo-600 font-medium hover:bg-slate-50 border-t border-gray-100">Update Zone</button>
+                                <button onClick={() => { updateVisitorStatus(visitor.id, 'Approved'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-slate-50 border-t border-gray-100">Approve</button>
+                                <button onClick={() => { updateVisitorStatus(visitor.id, 'Rejected'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50">Reject</button>
                                 <button onClick={() => { setSelectedVisitorHistory(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 border-t border-gray-100">
                                   View Zone History
                                 </button>
-                                <button onClick={() => { setSelectedVisitorQR(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-slate-50">
-                                  View QR Pass
-                                </button>
                               </>
                             )}
+                            <button onClick={() => { setSelectedVisitorQR(visitor); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-slate-50">
+                              View QR Pass
+                            </button>
+                            <button onClick={() => { navigate(`/visitors/returning?mobile=${visitor.mobileNumber}`); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm font-bold text-[var(--color-brand-indigo)] hover:bg-indigo-50 border-t border-indigo-100">
+                              Schedule Return Visit
+                            </button>
                           </div>
                         </div>
                       )}
@@ -364,6 +420,93 @@ const VisitorList = () => {
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Visitor Modal */}
+      {selectedVisitorEdit && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden relative">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Edit size={18} className="text-[var(--color-brand-indigo)]" />
+                Edit Visitor Details
+              </h3>
+              <button 
+                onClick={() => setSelectedVisitorEdit(null)} 
+                className="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const updates = {
+                visitorName: formData.get('visitorName'),
+                mobileNumber: formData.get('mobileNumber'),
+                hostName: formData.get('hostName'),
+                purpose: formData.get('purpose')
+              };
+              const success = await updateVisitor(selectedVisitorEdit.id, updates);
+              if (success) {
+                setSelectedVisitorEdit(null);
+              }
+            }}>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name</label>
+                  <input required name="visitorName" defaultValue={selectedVisitorEdit.visitorName} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                  <input required name="mobileNumber" defaultValue={selectedVisitorEdit.mobileNumber} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Host Name</label>
+                  <select required name="hostName" defaultValue={selectedVisitorEdit.hostName} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] outline-none bg-white">
+                    <option value="">Select Host</option>
+                    <option value="Vaideeswari (Admin)">Vaideeswari (Admin)</option>
+                    <option value="Adithiya (Senior HR)">Adithiya (Senior HR)</option>
+                    <option value="Sandhiya (HR Executive)">Sandhiya (HR Executive)</option>
+                    <option value="Monikashree (HR Executive)">Monikashree (HR Executive)</option>
+                    <option value="Priyadharshini (HR Executive)">Priyadharshini (HR Executive)</option>
+                    <option value="Agila (IT Team)">Agila (IT Team)</option>
+                    <option value="Avinash (Director MD Sir)">Avinash (Director MD Sir)</option>
+                    <option value="Sandeep (Chief Executive Officer Sir)">Sandeep (Chief Executive Officer Sir)</option>
+                    <option value="Srisha (SBI)">Srisha (SBI)</option>
+                    {/* Include the current host if it's not in the predefined list */}
+                    {!['Vaideeswari (Admin)', 'Adithiya (Senior HR)', 'Sandhiya (HR Executive)', 'Monikashree (HR Executive)', 'Priyadharshini (HR Executive)', 'Agila (IT Team)', 'Avinash (Director MD Sir)', 'Sandeep (Chief Executive Officer Sir)', 'Srisha (SBI)'].includes(selectedVisitorEdit.hostName) && (
+                      <option value={selectedVisitorEdit.hostName}>{selectedVisitorEdit.hostName}</option>
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
+                  <select required name="purpose" defaultValue={selectedVisitorEdit.purpose} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] outline-none bg-white">
+                    <option value="">Select Purpose</option>
+                    <option value="Interview">Interview</option>
+                    <option value="Follow up">Follow up</option>
+                    <option value="Job consulting">Job consulting</option>
+                    <option value="Banking">Banking</option>
+                    <option value="CEO meeting">CEO meeting</option>
+                    <option value="Visitors">Visitors</option>
+                    <option value="Guest">Guest</option>
+                    {/* Include the current purpose if it's not in the predefined list */}
+                    {!['Interview', 'Follow up', 'Job consulting', 'Banking', 'CEO meeting', 'Visitors', 'Guest'].includes(selectedVisitorEdit.purpose) && (
+                      <option value={selectedVisitorEdit.purpose}>{selectedVisitorEdit.purpose}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+                <button type="button" onClick={() => setSelectedVisitorEdit(null)} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-[var(--color-brand-indigo)] text-white rounded-lg font-medium flex items-center gap-2 hover:bg-[var(--color-brand-indigo-light)]">
+                  <Save size={16} /> Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

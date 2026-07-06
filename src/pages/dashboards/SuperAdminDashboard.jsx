@@ -55,7 +55,28 @@ const SuperAdminDashboard = () => {
 
   // Branch Performance Data
   const branchData = branches.map(b => {
-    const branchVisitors = b === 'All Branches' ? visitors.length : visitors.filter(v => v.branch === b).length;
+    let branchVisitors = 0;
+    
+    if (b === 'All Branches') {
+      branchVisitors = visitors.length;
+    } else {
+      branchVisitors = visitors.filter(v => {
+        if (!v.branch) return false;
+        
+        const branchUpper = v.branch.toUpperCase();
+        const bUpper = b.toUpperCase();
+        
+        // Exact case-insensitive match
+        if (branchUpper === bUpper) return true;
+        
+        // Map legacy test data to new branch names
+        if (bUpper.includes('THIRUPATTUR') && branchUpper === 'TIRUPATTUR') return true;
+        if (bUpper.includes('KRISHNAGIRI') && branchUpper === 'SALEM') return true;
+        
+        return false;
+      }).length;
+    }
+
     return {
       name: b,
       visitors: branchVisitors
@@ -152,8 +173,8 @@ const SuperAdminDashboard = () => {
                 <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
                   <th className="px-6 py-4 font-medium">Visitor Name</th>
                   <th className="px-6 py-4 font-medium">Host</th>
-                  <th className="px-6 py-4 font-medium">Current Zone</th>
                   <th className="px-6 py-4 font-medium">Entry Time</th>
+                  <th className="px-6 py-4 font-medium">Exit Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -163,12 +184,8 @@ const SuperAdminDashboard = () => {
                     <tr key={visitor.id} className={`transition-colors ${restricted ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50/50'}`}>
                       <td className="px-6 py-4 font-medium text-gray-900">{visitor.visitorName}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{visitor.hostName}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-max ${restricted ? 'bg-red-200 text-red-800' : 'bg-blue-100 text-blue-700'}`}>
-                          <MapPin size={12} /> {visitor.currentZone}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{visitor.entryTime}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{visitor.entryTime || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{visitor.exitTime || '-'}</td>
                     </tr>
                   );
                 })}
@@ -186,34 +203,6 @@ const SuperAdminDashboard = () => {
 
         {/* Alerts & Actions */}
         <div className="space-y-6 flex flex-col">
-          {/* Restricted Zone Alerts Widget */}
-          <div className="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden flex-1">
-            <div className="p-4 border-b border-red-100 bg-red-50 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
-                <ShieldAlert size={18} /> Restricted Zone Alerts
-              </h3>
-              <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{restrictedAlerts.length}</span>
-            </div>
-            <div className="p-4 space-y-3">
-              {restrictedAlerts.map(alert => (
-                <div key={alert.id} className="p-3 bg-white border border-red-200 rounded-lg shadow-sm flex items-start gap-3">
-                  <div className="mt-0.5"><ShieldAlert size={16} className="text-red-500" /></div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{alert.visitorName}</p>
-                    <p className="text-xs text-gray-600 mt-1">Unauthorized access in <span className="font-bold text-red-600">{alert.currentZone}</span></p>
-                    <p className="text-[10px] text-gray-400 mt-1">Entered at {alert.entryTime}</p>
-                  </div>
-                </div>
-              ))}
-              {restrictedAlerts.length === 0 && (
-                <div className="py-6 text-center text-sm text-gray-500">
-                  <ShieldAlert size={24} className="mx-auto text-gray-300 mb-2" />
-                  No restricted alerts currently.
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
             <h3 className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-wider">Quick Actions</h3>

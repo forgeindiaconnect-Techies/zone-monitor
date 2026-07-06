@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useVisitors } from '../../context/VisitorContext';
 import { useBlacklist } from '../../context/BlacklistContext';
 import { Search, User, Calendar, Save, AlertCircle, Info, History, X } from 'lucide-react';
@@ -7,6 +7,7 @@ import { calculateTimeSpent } from '../../utils/timeUtils';
 
 const ReturningVisitor = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { addVisitor, allVisitors } = useVisitors();
   const { isBlacklisted } = useBlacklist();
 
@@ -33,14 +34,15 @@ const ReturningVisitor = () => {
     'Srisha (SBI)'
   ]);
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e, forceQuery = null) => {
     e?.preventDefault();
-    if (!searchQuery || searchQuery.trim().length < 3) return;
+    const query = forceQuery || searchQuery;
+    if (!query || query.trim().length < 3) return;
 
     setSearchStatus('searching');
     try {
       const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`;
-      const res = await fetch(`${API_URL}/api/visitors/profile/${searchQuery}`);
+      const res = await fetch(`${API_URL}/api/visitors/profile/${query}`);
       
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       
@@ -62,6 +64,16 @@ const ReturningVisitor = () => {
       setProfile(null);
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mobile = params.get('mobile');
+    if (mobile) {
+      setSearchQuery(mobile);
+      // Auto-trigger search
+      handleSearch(null, mobile);
+    }
+  }, [location.search]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

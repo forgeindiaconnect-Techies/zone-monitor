@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  mobileNumber: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: true
@@ -20,7 +24,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['Super Admin', 'MD', 'Admin', 'Security', 'Visitor']
+    enum: ['Super Admin', 'MD', 'Admin', 'Security', 'Visitor', 'Student', 'Staff']
   },
   status: {
     type: String,

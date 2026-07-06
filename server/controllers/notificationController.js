@@ -2,7 +2,22 @@ const Notification = require('../models/Notification');
 
 exports.getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find().sort({ createdAt: -1 });
+    let query = {};
+    if (req.query.branch) {
+      const branchUpper = req.query.branch.toUpperCase();
+      let searchRegexStr = req.query.branch;
+      
+      if (branchUpper.includes('THIRUPATTUR')) {
+        searchRegexStr = `${req.query.branch}|Tirupattur`;
+      } else if (branchUpper.includes('KRISHNAGIRI')) {
+        searchRegexStr = `${req.query.branch}|Salem`;
+      } else if (branchUpper === 'BANGALORE') {
+        searchRegexStr = `${req.query.branch}|Bangalore`;
+      }
+      
+      query.branch = { $regex: new RegExp(`^(${searchRegexStr})$`, 'i') };
+    }
+    const notifications = await Notification.find(query).sort({ createdAt: -1 });
     res.status(200).json(notifications);
   } catch (error) {
     res.status(500).json({ message: error.message });

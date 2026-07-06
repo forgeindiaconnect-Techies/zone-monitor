@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
-import { Save, X, User, Mail, Lock, Shield, Building } from 'lucide-react';
+import { Save, X, User, Mail, Lock, Shield, Building, Phone } from 'lucide-react';
 
 const API_URL = `${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}/api/users`;
 
@@ -14,6 +14,7 @@ const UserForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    mobileNumber: '',
     password: '',
     role: 'Security',
     status: 'Active',
@@ -110,6 +111,20 @@ const UserForm = () => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                <Phone size={16} className="text-gray-400" /> Mobile Number
+              </label>
+              <input
+                type="tel"
+                name="mobileNumber"
+                value={formData.mobileNumber}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:bg-white transition-all"
+                placeholder="e.g. +91 9876543210"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                 <Lock size={16} className="text-gray-400" /> Initial Password
               </label>
               <input
@@ -143,6 +158,8 @@ const UserForm = () => {
                   <option value="MD">MD (Managing Director)</option>
                   <option value="Admin">Admin (Branch Administrator)</option>
                   <option value="Security">Security (Gate access only)</option>
+                  <option value="Student">Student</option>
+                  <option value="Staff">Staff</option>
                 </select>
               </div>
 
