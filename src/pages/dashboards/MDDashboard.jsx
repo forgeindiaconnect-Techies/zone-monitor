@@ -29,22 +29,22 @@ const MDDashboard = () => {
   const visitorsToday = visitors.filter(v => v.visitDate === today).length;
   const pendingApprovals = visitors.filter(v => v.status === 'Pending').length;
   
-  // Dummy data for Security Alerts and Zone Violations for MD overview
-  const securityAlerts = 2; // Simulated
-  const zoneViolations = 1; // Simulated
+  // Security Alerts and Zone Violations for MD overview
+  const securityAlerts = 0;
+  const zoneViolations = 0;
   const branchCount = branches.length;
 
-  // Visitor Trends Data (Dummy for chart)
+  // Visitor Trends Data
   const trendsData = [
-    { day: 'Mon', visitors: 45 },
-    { day: 'Tue', visitors: 52 },
-    { day: 'Wed', visitors: 38 },
-    { day: 'Thu', visitors: 65 },
-    { day: 'Fri', visitors: 80 },
-    { day: 'Sat', visitors: 20 },
-    { day: 'Sun', visitors: 15 },
+    { day: 'Mon', visitors: 0 },
+    { day: 'Tue', visitors: 0 },
+    { day: 'Wed', visitors: 0 },
+    { day: 'Thu', visitors: 0 },
+    { day: 'Fri', visitors: 0 },
+    { day: 'Sat', visitors: 0 },
+    { day: 'Sun', visitors: 0 },
   ];
-  const maxTrend = Math.max(...trendsData.map(d => d.visitors));
+  const maxTrend = Math.max(...trendsData.map(d => d.visitors), 1);
 
   // Branch Performance Data
   const branchData = branches.map(b => {

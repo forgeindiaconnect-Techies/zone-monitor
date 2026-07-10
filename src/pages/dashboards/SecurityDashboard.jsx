@@ -138,7 +138,7 @@ const SecurityDashboard = () => {
   const today = new Date().toISOString().split('T')[0];
   const todaysVisitors = visitors.filter(v => v.visitDate === today).length;
   const visitorsInside = visitors.filter(v => v.status === 'Inside');
-  const qrScans = Math.floor(todaysVisitors * 0.8) + 2; // Simulated: 80% scanned via QR
+  const qrScans = 0; // Simulated
   const blockedAttempts = visitors.filter(v => v.status === 'Rejected').length; // Treating rejected as blocked for security proxy
   const securityAlerts = 0; // Simulated
 

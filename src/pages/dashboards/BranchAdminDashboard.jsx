@@ -29,15 +29,15 @@ const BranchAdminDashboard = () => {
   const recentVisitors = [...visitors].slice(-5).reverse();
 
   const trendsData = [
-    { day: 'Mon', visitors: 15 },
-    { day: 'Tue', visitors: 22 },
-    { day: 'Wed', visitors: 18 },
-    { day: 'Thu', visitors: 25 },
-    { day: 'Fri', visitors: 30 },
-    { day: 'Sat', visitors: 8 },
-    { day: 'Sun', visitors: 5 },
+    { day: 'Mon', visitors: 0 },
+    { day: 'Tue', visitors: 0 },
+    { day: 'Wed', visitors: 0 },
+    { day: 'Thu', visitors: 0 },
+    { day: 'Fri', visitors: 0 },
+    { day: 'Sat', visitors: 0 },
+    { day: 'Sun', visitors: 0 },
   ];
-  const maxTrend = Math.max(...trendsData.map(d => d.visitors));
+  const maxTrend = Math.max(...trendsData.map(d => d.visitors), 1);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

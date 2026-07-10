@@ -181,7 +181,7 @@ const VisitorList = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{visitor.companyName}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{visitor.hostName}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{visitor.visitDate}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{visitor.visitDate}</td>
                   <td className="px-6 py-4">
                     {visitor.status === 'Exited' ? (
                       <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200 flex items-center gap-1 w-max">
