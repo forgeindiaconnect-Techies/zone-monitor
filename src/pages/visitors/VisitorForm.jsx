@@ -77,7 +77,8 @@ const VisitorForm = () => {
     data.append('photo', file);
 
     try {
-      const response = await fetch(`http://${networkIp}:5000/api/visitors/upload`, {
+      const API_URL = import.meta.env.VITE_API_URL || `http://${networkIp}:5000`;
+      const response = await fetch(`${API_URL}/api/visitors/upload`, {
         method: 'POST',
         body: data,
       });
@@ -91,6 +92,7 @@ const VisitorForm = () => {
     } catch (error) {
       console.error('Error uploading photo:', error);
       addNotification('Upload Failed', 'Failed to upload photo. Please try again.', 'error');
+      setPreviewUrl(''); // Clear the preview if upload fails
     } finally {
       setUploading(false);
     }
