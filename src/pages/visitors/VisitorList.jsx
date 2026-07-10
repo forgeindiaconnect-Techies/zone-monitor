@@ -277,7 +277,7 @@ const VisitorList = () => {
             
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm inline-block mb-6">
               <QRCodeSVG 
-                value={`http://${networkIp}:${window.location.port ? window.location.port : ''}/pass/${selectedVisitorQR.visitId || selectedVisitorQR.id}`} 
+                value={`${window.location.origin}/pass/${selectedVisitorQR.visitId || selectedVisitorQR.id}`} 
                 size={200}
                 level="H"
                 includeMargin={true}
