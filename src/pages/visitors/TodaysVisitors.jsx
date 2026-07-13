@@ -52,16 +52,16 @@ const TodaysVisitors = () => {
         </div>
       </div>
 
-      <div className="bg-[var(--color-brand-indigo)] rounded-2xl p-8 text-white shadow-lg flex items-center justify-between">
+      <div className="bg-[var(--color-brand-indigo)] rounded-xl p-5 text-white shadow-md flex items-center justify-between">
         <div>
-          <p className="text-indigo-100 text-lg font-medium mb-1">Total Visitors Today</p>
-          <h2 className="text-5xl font-extrabold flex items-center gap-4">
-            <Users size={40} className="text-indigo-300 opacity-80" />
+          <p className="text-indigo-100 text-sm font-medium mb-1">Total Visitors Today</p>
+          <h2 className="text-3xl font-extrabold flex items-center gap-3">
+            <Users size={28} className="text-indigo-300 opacity-80" />
             {loading ? '...' : data.totalVisitorsToday}
           </h2>
         </div>
         <div className="hidden sm:block">
-          <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 text-sm font-semibold">
+          <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 text-xs font-semibold">
             Registered Today
           </div>
         </div>
