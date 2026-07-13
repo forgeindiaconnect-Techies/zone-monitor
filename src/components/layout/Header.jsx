@@ -147,7 +147,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
           </button>
           
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+            <div className="absolute -right-2 sm:right-0 mt-2 w-[90vw] max-w-[320px] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
               <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-lg">
                 <h3 className="font-semibold text-gray-700">Notifications</h3>
                 <span className="text-xs text-gray-500">{unreadCount} unread</span>
