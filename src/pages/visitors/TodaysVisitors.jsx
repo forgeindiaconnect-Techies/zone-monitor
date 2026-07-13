@@ -52,7 +52,7 @@ const TodaysVisitors = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-8 text-white shadow-lg flex items-center justify-between">
+      <div className="bg-[var(--color-brand-indigo)] rounded-2xl p-8 text-white shadow-lg flex items-center justify-between">
         <div>
           <p className="text-indigo-100 text-lg font-medium mb-1">Total Visitors Today</p>
           <h2 className="text-5xl font-extrabold flex items-center gap-4">
