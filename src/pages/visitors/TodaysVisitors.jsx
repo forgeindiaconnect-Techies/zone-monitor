@@ -44,62 +44,49 @@ const TodaysVisitors = () => {
   }, [queryBranch]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Today's Visitors</h1>
-          <p className="text-gray-500 mt-1">Live tracking of visitors registered today</p>
+    <div className="animate-in fade-in duration-500 max-w-xl mx-auto pt-8">
+      
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* Header */}
+        <div className="bg-slate-50 px-8 py-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Visitor Count by Host</h2>
+          <p className="text-sm text-gray-500 mt-1">Today's Live Summary</p>
         </div>
-      </div>
 
-      <div className="bg-[var(--color-brand-indigo)] rounded-xl p-5 text-white shadow-md flex items-center justify-between">
-        <div>
-          <p className="text-indigo-100 text-sm font-medium mb-1">Total Visitors Today</p>
-          <h2 className="text-3xl font-extrabold flex items-center gap-3">
-            <Users size={28} className="text-indigo-300 opacity-80" />
-            {loading ? '...' : data.totalVisitorsToday}
-          </h2>
+        {/* List Body */}
+        <div className="px-8 py-6">
+          {loading && data.teamBreakdown.length === 0 ? (
+            <div className="text-center text-gray-400 py-8">Loading live data...</div>
+          ) : data.teamBreakdown.length === 0 ? (
+            <div className="text-center text-gray-500 py-8 font-medium">No visitors registered today.</div>
+          ) : (
+            <div className="space-y-4">
+              {data.teamBreakdown.map((item, index) => (
+                <div key={index} className="flex items-center justify-between group">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-[var(--color-brand-indigo)] group-hover:bg-indigo-100 transition-colors">
+                      <UserCheck size={18} />
+                    </div>
+                    <span className="text-gray-800 font-semibold text-lg">{item.hostName}</span>
+                  </div>
+                  <div className="text-gray-600 font-medium">
+                    <span className="text-xl text-gray-900 font-bold mr-1">{item.count}</span>
+                    <span className="text-sm">Visitors</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="hidden sm:block">
-          <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 text-xs font-semibold">
-            Registered Today
+
+        {/* Footer / Total */}
+        <div className="px-8 py-5 bg-[var(--color-brand-indigo)] text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold text-indigo-100">Total Visitors:</span>
+            <span className="text-3xl font-black">{loading ? '...' : data.totalVisitorsToday}</span>
           </div>
         </div>
       </div>
-
-      {loading && data.teamBreakdown.length === 0 ? (
-        <div className="flex justify-center p-12 text-gray-400">Loading live data...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          {data.teamBreakdown.length === 0 ? (
-            <div className="col-span-full bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
-              No visitors have been registered yet today.
-            </div>
-          ) : (
-            data.teamBreakdown.map((item, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
-                
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-indigo-50 text-[var(--color-brand-indigo)] flex items-center justify-center font-bold text-lg">
-                    {item.hostName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900">
-                    {item.count}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-bold text-gray-900 text-lg">{item.hostName}</h3>
-                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                    <UserCheck size={14} /> Registered Visitors
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
     </div>
   );
 };
