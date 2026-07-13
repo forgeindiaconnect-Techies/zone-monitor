@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Users, Clock, Building, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { calculateTimeSpent } from '../../utils/timeUtils';
 
+import TeamVisitorWidget from '../../components/dashboards/TeamVisitorWidget';
+
 const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
     <div className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClass}`}>
@@ -137,7 +139,7 @@ const AdminDashboard = () => {
         <DashboardCard title="Branch Statistics" value={branchCount} icon={Building} colorClass="bg-purple-100 text-purple-600" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         
         {/* Visitor Trends Chart */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
@@ -179,6 +181,9 @@ const AdminDashboard = () => {
             ))}
           </div>
         </div>
+
+        {/* Team-wise Visitor Count Widget */}
+        <TeamVisitorWidget branch={currentUser?.branch} />
 
       </div>
 
