@@ -8,8 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { calculateTimeSpent } from '../../utils/timeUtils';
 import { useAttendance } from '../../context/AttendanceContext';
 
-import TeamVisitorWidget from '../../components/dashboards/TeamVisitorWidget';
-
 const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
     <div className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClass}`}>
@@ -359,9 +357,8 @@ const SecurityDashboard = () => {
           </div>
         </div>
 
-        {/* Right Column: Expected Arrivals Feed and Team Stats */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
+        {/* Expected Arrivals Feed */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
             <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Recent Registrations</h3>
             <div className="relative w-full sm:w-64">
@@ -435,9 +432,7 @@ const SecurityDashboard = () => {
           </div>
         </div>
 
-        <TeamVisitorWidget branch={activeBranch} />
       </div>
-    </div>
     </div>
   );
 };

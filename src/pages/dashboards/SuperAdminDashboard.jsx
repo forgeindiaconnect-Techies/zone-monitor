@@ -5,7 +5,6 @@ import { useZones } from '../../context/ZoneContext';
 import { Users, UserCheck, Clock, Ban, Building, MapPin, ShieldAlert, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import TeamVisitorWidget from '../../components/dashboards/TeamVisitorWidget';
 
 const DashboardCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex items-center space-x-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
@@ -238,7 +237,7 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Visitor Trends Chart */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
           <h3 className="text-[11px] font-bold text-gray-500 mb-6 uppercase tracking-wider">Visitor Trends (This Week)</h3>
@@ -279,9 +278,6 @@ const SuperAdminDashboard = () => {
             ))}
           </div>
         </div>
-
-        {/* Team-wise Visitor Count Widget */}
-        <TeamVisitorWidget branch={activeBranch} />
       </div>
 
     </div>
