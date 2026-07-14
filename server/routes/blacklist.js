@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Blacklist = require('../models/Blacklist');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.use(authMiddleware);
 
 // GET all blacklist entries
 router.get('/', async (req, res) => {
   try {
-    const blacklist = await Blacklist.find().sort({ createdAt: -1 });
+    const blacklist = await Blacklist.find({ companyId: req.companyId }).sort({ createdAt: -1 });
     res.json(blacklist);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -14,7 +17,7 @@ router.get('/', async (req, res) => {
 
 // POST a new blacklist entry
 router.post('/', async (req, res) => {
-  const entry = new Blacklist(req.body);
+  const entry = new Blacklist({ ...req.body, companyId: req.companyId });
   try {
     const newEntry = await entry.save();
     res.status(201).json(newEntry);
@@ -26,7 +29,7 @@ router.post('/', async (req, res) => {
 // DELETE a blacklist entry (unblock)
 router.delete('/:id', async (req, res) => {
   try {
-    const entry = await Blacklist.findByIdAndDelete(req.params.id);
+    const entry = await Blacklist.findOneAndDelete({ _id: req.params.id, companyId: req.companyId });
     if (!entry) return res.status(404).json({ message: 'Entry not found' });
     res.json({ message: 'Removed from blacklist' });
   } catch (err) {

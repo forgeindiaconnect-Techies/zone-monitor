@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const blacklistSchema = new mongoose.Schema({
+  companyId: {
+    type: String,
+    required: true,
+    default: 'FIC001',
+    index: true
+  },
   visitorName: {
     type: String,
     required: true,

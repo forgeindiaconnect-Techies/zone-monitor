@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Visitor = require('../models/Visitor');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.use(authMiddleware);
 
 // GET branch summary
 router.get('/branch-summary', async (req, res) => {
@@ -11,9 +14,9 @@ router.get('/branch-summary', async (req, res) => {
       return res.status(400).json({ message: 'Branch query parameter is required' });
     }
 
-    const security = await User.countDocuments({ role: 'Security', branch });
-    const admins = await User.countDocuments({ role: { $in: ['Admin', 'Branch Admin', 'MD'] }, branch });
-    const visitors = await Visitor.countDocuments({ branch });
+    const security = await User.countDocuments({ companyId: req.companyId, role: 'Security', branch });
+    const admins = await User.countDocuments({ companyId: req.companyId, role: { $in: ['Admin', 'Branch Admin', 'MD'] }, branch });
+    const visitors = await Visitor.countDocuments({ companyId: req.companyId, branch });
 
     res.json({ security, admins, visitors });
   } catch (err) {
@@ -40,7 +43,7 @@ router.get('/fix-branches', async (req, res) => {
 // GET all users
 router.get('/', async (req, res) => {
   try {
-    let query = {};
+    let query = { companyId: req.companyId };
     if (req.query.branch) {
       query.branch = req.query.branch;
     }
@@ -60,7 +63,7 @@ router.get('/', async (req, res) => {
 // GET single user
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, companyId: req.companyId });
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     const u = user.toJSON();
@@ -86,7 +89,29 @@ router.post('/', async (req, res) => {
       userBranch = req.body.creatorBranch || req.body.branch;
     }
 
+    // Enforce Plan Limits for Security Staff role
+    if (req.body.role === 'Security') {
+      const Company = require('../models/Company');
+      const company = await Company.findOne({ code: req.companyId });
+      if (company) {
+        const plan = company.subscription;
+        let limit = -1;
+        if (plan === 'Basic') limit = 5;
+        else if (plan === 'Standard') limit = 20;
+
+        if (limit !== -1) {
+          const count = await User.countDocuments({ companyId: req.companyId, role: 'Security' });
+          if (count >= limit) {
+            return res.status(403).json({ 
+              message: `Plan Limit Exceeded: Your current plan (${plan}) only allows up to ${limit} security staff members. Please upgrade to add more.` 
+            });
+          }
+        }
+      }
+    }
+
     const user = new User({
+      companyId: req.companyId,
       name: req.body.name,
       email: req.body.email,
       mobileNumber: req.body.mobileNumber,
@@ -99,6 +124,25 @@ router.post('/', async (req, res) => {
 
     const newUser = await user.save();
     
+    // Trigger Notification for User added
+    if (newUser.role === 'Admin' || newUser.role === 'Branch Admin' || newUser.role === 'Security') {
+      const Notification = require('../models/Notification');
+      const typeStr = newUser.role === 'Security' ? 'Security' : 'Admin';
+      const titleStr = newUser.role === 'Security' ? '👮 Security Added' : '👤 Admin Added';
+      const newNotification = await Notification.create({
+        companyId: req.companyId,
+        branchId: newUser.branch,
+        type: typeStr,
+        title: titleStr,
+        message: `${newUser.name} was added as ${newUser.role} for ${newUser.branch} Branch.`,
+        createdBy: req.body.createdBy || 'System'
+      });
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_notification', newNotification);
+      }
+    }
+
     const u = newUser.toJSON();
     delete u.password;
     res.status(201).json(u);
@@ -110,8 +154,8 @@ router.post('/', async (req, res) => {
 // PATCH update user
 router.patch('/:id', async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.params.id, companyId: req.companyId },
       { $set: req.body },
       { new: true }
     );
@@ -128,7 +172,7 @@ router.patch('/:id', async (req, res) => {
 // DELETE user (or soft delete)
 router.delete('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findOneAndDelete({ _id: req.params.id, companyId: req.companyId });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ message: 'User deleted' });
   } catch (err) {

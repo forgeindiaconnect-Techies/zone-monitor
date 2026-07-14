@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
 import { useNotification } from '../../context/NotificationContext';
-import { Bell, User, MapPin, Check, Menu } from 'lucide-react';
+import { Bell, User, MapPin, Check, Menu, Trash2, ExternalLink } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = `${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}/api/notifications`;
 
@@ -11,36 +12,38 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   const { user } = useAuth();
   const { branches, activeBranch, setActiveBranch } = useBranch();
   const { addNotification } = useNotification();
+  const navigate = useNavigate();
   
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  const getNormalizedRole = (role) => {
-    if (!role) return 'admin';
-    if (role === 'Branch Admin') return 'admin';
-    return role.toLowerCase().replace(/\s/g, '');
-  };
+  const getHeaders = () => ({
+    'X-Company-Id': user?.companyId || 'SYSTEM',
+    'X-User-Id': user?.id || 'bootstrap',
+    'X-User-Role': user?.role || 'User',
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  });
 
   const fetchNotifications = async () => {
     try {
       let queryBranch = user?.branch;
-      if (user?.role === 'Super Admin') {
+      if (user?.role === 'Super Admin' || user?.role === 'SaaS Super Admin') {
         queryBranch = activeBranch === 'All Branches' ? null : activeBranch;
       }
-      const fetchUrl = queryBranch && queryBranch !== 'All Branches'
-        ? `${API_URL}?branch=${encodeURIComponent(queryBranch)}` 
-        : API_URL;
       
-      const res = await fetch(fetchUrl, { cache: 'no-store' });
+      let fetchUrl = new URL(API_URL);
+      if (queryBranch) {
+        fetchUrl.searchParams.append('branch', queryBranch);
+      }
+      
+      const res = await fetch(fetchUrl.toString(), { 
+        cache: 'no-store',
+        headers: getHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
-        const normalizedRole = getNormalizedRole(user?.role);
-        const relevant = data.filter(n => {
-          const roles = n.roles || [];
-          return roles.includes(normalizedRole) || (user?.role && roles.includes(user.role));
-        });
-        setNotifications(relevant);
+        setNotifications(data);
       }
     } catch (err) {
       console.error('Failed to fetch notifications', err);
@@ -52,24 +55,28 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     
     const socket = io(`${import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`}`);
     
-    socket.on('newNotification', (notification) => {
+    socket.on('new_notification', (notification) => {
       let queryBranch = user?.branch;
-      if (user?.role === 'Super Admin') {
+      if (user?.role === 'Super Admin' || user?.role === 'SaaS Super Admin') {
         queryBranch = activeBranch === 'All Branches' ? null : activeBranch;
       }
       
-      // Ignore notifications that don't belong to the expected branch context
-      if (queryBranch && queryBranch !== 'All Branches' && notification.branch && notification.branch !== queryBranch) {
+      // Basic role/branch filtering on socket client
+      if (queryBranch && queryBranch !== 'All Branches' && notification.branchId && notification.branchId !== queryBranch) {
         return;
       }
 
-      const normalizedRole = getNormalizedRole(user?.role);
-      const roles = notification.roles || [];
-      
-      if (roles.includes(normalizedRole) || (user?.role && roles.includes(user.role))) {
-        setNotifications(prev => [notification, ...prev]);
-        addNotification(notification.title, notification.message, 'info');
+      if (user?.role === 'SaaS Super Admin') {
+        const saasTypes = ['Tenant', 'Subscription', 'System', 'Branch', 'Admin', 'Announcement'];
+        if (!saasTypes.includes(notification.type)) {
+          return;
+        }
+      } else if (user?.role !== 'SaaS Super Admin' && notification.companyId !== 'SYSTEM' && notification.companyId !== user?.companyId) {
+        return;
       }
+
+      setNotifications(prev => [notification, ...prev]);
+      addNotification(notification.title, notification.message, 'info');
     });
 
     return () => socket.disconnect();
@@ -87,12 +94,29 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
 
   const markAsRead = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/${id}/read`, { method: 'PATCH' });
+      const res = await fetch(`${API_URL}/${id}/read`, { 
+        method: 'PATCH',
+        headers: getHeaders()
+      });
       if (res.ok) {
         setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
       }
     } catch (err) {
       console.error('Failed to mark read', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const res = await fetch(`${API_URL}/read-all`, { 
+        method: 'PATCH',
+        headers: getHeaders()
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
+    } catch (err) {
+      console.error('Failed to mark all read', err);
     }
   };
 
@@ -141,45 +165,80 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
             <Bell size={20} />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
-                {unreadCount}
+                {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>
           
           {showDropdown && (
-            <div className="absolute -right-2 sm:right-0 mt-2 w-[90vw] max-w-[320px] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-              <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-lg">
-                <h3 className="font-semibold text-gray-700">Notifications</h3>
-                <span className="text-xs text-gray-500">{unreadCount} unread</span>
+            <div className="absolute -right-2 sm:right-0 mt-2 w-[90vw] max-w-[360px] sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 flex flex-col max-h-[85vh]">
+              <div className="p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 rounded-t-lg shrink-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-800">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <span className="bg-indigo-100 text-[var(--color-brand-indigo)] text-xs font-bold px-2 py-0.5 rounded-full">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={markAllAsRead}
+                    className="text-[11px] font-medium text-gray-500 hover:text-[var(--color-brand-indigo)] transition-colors flex items-center gap-1"
+                  >
+                    <Check size={12} /> Mark All Read
+                  </button>
+                </div>
               </div>
               
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 120px)' }}>
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    No new notifications
+                  <div className="p-8 text-center text-sm text-gray-500 flex flex-col items-center justify-center">
+                    <Bell size={32} className="text-gray-300 mb-2" />
+                    No notifications yet
                   </div>
                 ) : (
-                  notifications.map(notification => (
+                  notifications.slice(0, 10).map(notification => (
                     <div 
                       key={notification._id} 
                       onClick={() => !notification.isRead && markAsRead(notification._id)}
-                      className={`p-4 transition-colors cursor-pointer ${!notification.isRead ? 'bg-indigo-50/30 hover:bg-indigo-50' : 'hover:bg-gray-50'}`}
+                      className={`p-4 transition-colors cursor-pointer flex gap-3 ${!notification.isRead ? 'bg-indigo-50/40 hover:bg-indigo-50/80' : 'hover:bg-gray-50'}`}
                     >
-                      <div className="flex items-start gap-2 mb-1">
-                        <span className="text-sm mt-0.5">{!notification.isRead ? '🔴' : '⚪'}</span>
-                        <h4 className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
-                          {notification.title}
-                        </h4>
+                      <div className="shrink-0 mt-0.5">
+                        {!notification.isRead ? (
+                          <div className="w-2 h-2 bg-[var(--color-brand-indigo)] rounded-full mt-1.5"></div>
+                        ) : (
+                          <div className="w-2 h-2 bg-gray-300 rounded-full mt-1.5"></div>
+                        )}
                       </div>
-                      <p className={`text-xs ml-6 ${!notification.isRead ? 'text-gray-700' : 'text-gray-500'} mb-1`}>
-                        {notification.message}
-                      </p>
-                      <span className="text-[10px] text-gray-400 ml-6">
-                        {new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <h4 className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-600'} truncate`}>
+                            {notification.title}
+                          </h4>
+                          <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">
+                            {new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${!notification.isRead ? 'text-gray-700' : 'text-gray-500'} line-clamp-2 leading-relaxed`}>
+                          {notification.message}
+                        </p>
+                      </div>
                     </div>
                   ))
                 )}
+              </div>
+              
+              <div className="p-3 border-t border-gray-100 bg-gray-50/80 rounded-b-lg shrink-0">
+                <button 
+                  onClick={() => {
+                    setShowDropdown(false);
+                    navigate('/notifications');
+                  }}
+                  className="w-full py-2 text-sm font-medium text-[var(--color-brand-indigo)] hover:bg-indigo-50 rounded-md transition-colors flex items-center justify-center gap-1.5"
+                >
+                  View All Notifications <ExternalLink size={14} />
+                </button>
               </div>
             </div>
           )}

@@ -48,6 +48,7 @@ const alertsRouter = require('./routes/alerts');
 const notificationRoutes = require('./routes/notificationRoutes');
 const attendanceRouter = require('./routes/attendance');
 const branchSettingsRouter = require('./routes/branchSettings');
+const superAdminRouter = require('./routes/superAdmin');
 
 app.use('/api/visitors', visitorsRouter);
 app.use('/api/users', usersRouter);
@@ -58,6 +59,7 @@ app.use('/api/alerts', alertsRouter);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/branch-settings', branchSettingsRouter);
+app.use('/api/super-admin', superAdminRouter);
 
 app.get('/api/network-ip', (req, res) => {
   const os = require('os');

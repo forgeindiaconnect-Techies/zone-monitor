@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const role = user?.role || 'Visitor';
 
   const allNavItems = [
-    { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security', 'Visitor'] },
+    { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, roles: ['SaaS Super Admin', 'Super Admin', 'MD', 'Admin', 'Security', 'Visitor'] },
     { name: 'All Visitors', path: '/visitors', icon: <Users size={20} />, roles: ['Super Admin', 'MD', 'Admin', 'Security'] },
     { name: 'User Management', path: '/users', icon: <Shield size={20} />, roles: ['Super Admin'] },
     { name: 'Approvals', path: '/approvals', icon: <CheckSquare size={20} />, roles: ['Super Admin', 'MD', 'Admin'] },

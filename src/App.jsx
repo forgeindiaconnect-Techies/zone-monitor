@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { VisitorProvider } from './context/VisitorContext';
@@ -8,6 +8,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { BranchProvider } from './context/BranchContext';
 import { AttendanceProvider } from './context/AttendanceContext';
 import ToastContainer from './components/notifications/ToastContainer';
+import { ShieldAlert } from 'lucide-react';
 
 // Layouts
 import MainLayout from './components/layout/MainLayout';
@@ -15,6 +16,7 @@ import MainLayout from './components/layout/MainLayout';
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import NotificationsPage from './pages/dashboards/NotificationsPage';
 import VisitorList from './pages/visitors/VisitorList';
 import VisitorForm from './pages/visitors/VisitorForm';
 import ReturningVisitor from './pages/visitors/ReturningVisitor';
@@ -57,6 +59,7 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }>
         <Route index element={<Dashboard />} />
+        <Route path="notifications" element={<ProtectedRoute allowedRoles={['SaaS Super Admin', 'Super Admin', 'MD', 'Admin', 'Branch Admin', 'Security']}><NotificationsPage /></ProtectedRoute>} />
         
         {/* User Management */}
         <Route path="users" element={<ProtectedRoute allowedRoles={['Super Admin']}><UserList /></ProtectedRoute>} />
@@ -85,6 +88,16 @@ const AppRoutes = () => {
 };
 
 function App() {
+  const [lockoutMessage, setLockoutMessage] = useState(null);
+
+  useEffect(() => {
+    const handleLockout = (e) => {
+      setLockoutMessage(e.detail);
+    };
+    window.addEventListener('subscription-lock', handleLockout);
+    return () => window.removeEventListener('subscription-lock', handleLockout);
+  }, []);
+
   return (
     <AuthProvider>
       <NotificationProvider>
@@ -94,6 +107,37 @@ function App() {
               <ZoneProvider>
                 <BlacklistProvider>
                   <Router>
+                    {lockoutMessage && (
+                      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-8 text-center animate-in zoom-in-95 duration-200">
+                          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
+                            <ShieldAlert size={36} />
+                          </div>
+                          <h2 className="text-xl font-extrabold text-gray-900 mb-2">Access Restrained</h2>
+                          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                            {lockoutMessage}
+                          </p>
+                          <div className="space-y-3">
+                            <button 
+                              onClick={() => {
+                                setLockoutMessage(null);
+                                localStorage.removeItem('zmvms_user');
+                                window.location.href = '/login';
+                              }}
+                              className="w-full bg-[#1E1B6E] hover:bg-opacity-95 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md"
+                            >
+                              Sign Out & Switch Account
+                            </button>
+                            <button 
+                              onClick={() => setLockoutMessage(null)}
+                              className="w-full bg-slate-100 hover:bg-slate-200 text-gray-700 font-semibold py-3 rounded-xl text-sm transition-all border border-slate-200"
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <AppRoutes />
                     <ToastContainer />
                   </Router>

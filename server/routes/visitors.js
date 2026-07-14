@@ -6,6 +6,14 @@ const cloudinary = require('../config/cloudinary');
 const Visitor = require('../models/Visitor');
 const VisitorProfile = require('../models/VisitorProfile');
 const Notification = require('../models/Notification');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.use((req, res, next) => {
+  if (req.path.startsWith('/pass/') || req.path === '/upload') {
+    return next();
+  }
+  authMiddleware(req, res, next);
+});
 
 // Configure Multer storage to use Cloudinary
 const storage = new CloudinaryStorage({
@@ -45,6 +53,7 @@ router.get('/todays-summary', async (req, res) => {
     endOfDay.setHours(23, 59, 59, 999);
 
     const matchStage = {
+      companyId: req.companyId,
       createdAt: {
         $gte: startOfDay,
         $lte: endOfDay,
@@ -97,7 +106,7 @@ router.get('/todays-summary', async (req, res) => {
 // Get all visitors
 router.get('/', async (req, res) => {
   try {
-    let query = {};
+    let query = { companyId: req.companyId };
     if (req.query.branch) {
       const branchUpper = req.query.branch.toUpperCase();
       
@@ -128,13 +137,35 @@ router.post('/', async (req, res) => {
   try {
     const { visitorName, mobileNumber, email, companyName, photoUrl } = req.body;
 
+    // Enforce Monthly Visitor Limits (Basic Plan = 500/Month)
+    const Company = require('../models/Company');
+    const company = await Company.findOne({ code: req.companyId });
+    if (company && company.subscription === 'Basic') {
+      const limit = 500;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const count = await Visitor.countDocuments({
+        companyId: req.companyId,
+        createdAt: { $gte: startOfMonth }
+      });
+
+      if (count >= limit) {
+        return res.status(403).json({ 
+          message: `Monthly Limit Reached: Your current plan (Basic) only allows up to ${limit} visitors per month. Please upgrade to continue registering visitors.` 
+        });
+      }
+    }
+
     // 1. Upsert Visitor Profile
-    let profile = await VisitorProfile.findOne({ mobileNumber });
+    let profile = await VisitorProfile.findOne({ companyId: req.companyId, mobileNumber });
     let profileId;
     if (!profile) {
-      const profileCount = await VisitorProfile.countDocuments();
+      const profileCount = await VisitorProfile.countDocuments({ companyId: req.companyId });
       profileId = `VIS${(profileCount + 1).toString().padStart(3, '0')}`;
       profile = new VisitorProfile({
+        companyId: req.companyId,
         profileId,
         mobileNumber,
         visitorName,
@@ -154,7 +185,7 @@ router.post('/', async (req, res) => {
     }
 
     // 2. Generate unique Visit ID: VISIT0001
-    const count = await Visitor.countDocuments();
+    const count = await Visitor.countDocuments({ companyId: req.companyId });
     const nextNum = (count + 1).toString().padStart(4, '0');
     const visitId = `VISIT${nextNum}`;
     
@@ -165,6 +196,7 @@ router.post('/', async (req, res) => {
     // 4. Save the Visit Record
     const visitor = new Visitor({
       ...req.body,
+      companyId: req.companyId,
       visitorProfileId: profile._id,
       profileId,
       visitId,
@@ -174,15 +206,17 @@ router.post('/', async (req, res) => {
     const newVisitor = await visitor.save();
 
     const notification = await Notification.create({
-      title: "New Visitor Registered",
-      message: `${newVisitor.visitorName} has been registered by Security.`,
-      roles: ["admin", "md", "superadmin", "security"],
-      branch: newVisitor.branch
+      companyId: req.companyId,
+      branchId: newVisitor.branch,
+      type: 'Visitor',
+      title: '👥 Visitor Registered',
+      message: `${newVisitor.visitorName} has been registered for ${newVisitor.hostName || 'a visit'}.`,
+      createdBy: req.user ? req.user.name : 'Security'
     });
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('newNotification', notification);
+      io.emit('new_notification', notification);
     }
 
     res.status(201).json(newVisitor);
@@ -212,9 +246,9 @@ router.get('/pass/:visitId', async (req, res) => {
 // Update visitor status/tracking
 router.patch('/:id', async (req, res) => {
   try {
-    const oldVisitor = await Visitor.findById(req.params.id);
-    const updatedVisitor = await Visitor.findByIdAndUpdate(
-      req.params.id,
+    const oldVisitor = await Visitor.findOne({ _id: req.params.id, companyId: req.companyId });
+    const updatedVisitor = await Visitor.findOneAndUpdate(
+      { _id: req.params.id, companyId: req.companyId },
       req.body,
       { new: true }
     );
@@ -224,17 +258,34 @@ router.patch('/:id', async (req, res) => {
       if (req.body.status === 'Approved' || req.body.status === 'Rejected') {
         const action = req.body.status === 'Approved' ? 'approved' : 'rejected';
         const notification = await Notification.create({
-          title: `Visitor ${req.body.status}`,
+          companyId: req.companyId,
+          branchId: updatedVisitor.branch,
+          type: 'Visitor',
+          title: `👥 Visitor ${req.body.status}`,
           message: `${updatedVisitor.visitorName} has been ${action} by ${req.body.approvedBy || 'Admin'}.`,
-          roles: ["admin", "md", "superadmin", "security"],
-          branch: updatedVisitor.branch
+          createdBy: req.body.approvedBy || 'System'
         });
         
         const io = req.app.get('io');
         if (io) {
-          io.emit('newNotification', notification);
+          io.emit('new_notification', notification);
         }
       }
+    }
+
+    if (req.body.status === 'Inside' && oldVisitor && oldVisitor.status !== 'Inside') {
+       const notification = await Notification.create({
+          companyId: req.companyId,
+          branchId: updatedVisitor.branch,
+          type: 'Visitor',
+          title: '✅ Visitor Checked In',
+          message: `${updatedVisitor.visitorName} checked in at ${updatedVisitor.branch} Branch.`,
+          createdBy: req.user ? req.user.name : 'System'
+        });
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('new_notification', notification);
+        }
     }
 
     res.json(updatedVisitor);
@@ -247,7 +298,7 @@ router.patch('/:id', async (req, res) => {
 router.patch('/:id/zone', async (req, res) => {
   try {
     const { status, currentZone, entryTime, exitTime, checkedIn, remarks, purpose } = req.body;
-    const visitor = await Visitor.findById(req.params.id);
+    const visitor = await Visitor.findOne({ _id: req.params.id, companyId: req.companyId });
     if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
     // Initialize zoneLogs if undefined (for backwards compatibility)
@@ -301,15 +352,17 @@ router.patch('/:id/zone', async (req, res) => {
     // Check if visitor has checked out
     if (status === 'Exited') {
       const notification = await Notification.create({
-        title: "Visitor Checked Out",
-        message: `${visitor.visitorName} has checked out.`,
-        roles: ["admin", "md", "superadmin", "security"],
-        branch: visitor.branch
+        companyId: req.companyId,
+        branchId: visitor.branch,
+        type: 'Visitor',
+        title: '🚪 Visitor Checked Out',
+        message: `${visitor.visitorName} checked out successfully.`,
+        createdBy: req.user ? req.user.name : 'System'
       });
       
       const io = req.app.get('io');
       if (io) {
-        io.emit('newNotification', notification);
+        io.emit('new_notification', notification);
       }
     }
 
@@ -323,6 +376,7 @@ router.get('/profile/:query', async (req, res) => {
   try {
     const query = req.params.query;
     let profile = await VisitorProfile.findOne({
+      companyId: req.companyId,
       $or: [
         { mobileNumber: query },
         { visitorName: { $regex: new RegExp(query, 'i') } }
@@ -331,6 +385,7 @@ router.get('/profile/:query', async (req, res) => {
 
     if (!profile) {
       const pastVisit = await Visitor.findOne({
+        companyId: req.companyId,
         $or: [
           { mobileNumber: query },
           { visitorName: { $regex: new RegExp(query, 'i') } }

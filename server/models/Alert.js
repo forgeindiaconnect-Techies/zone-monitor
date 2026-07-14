@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const alertSchema = new mongoose.Schema({
+  companyId: {
+    type: String,
+    required: true,
+    default: 'FIC001',
+    index: true
+  },
   visitId: { type: String, required: true },
   visitorName: { type: String, required: true },
   branch: { type: String, required: true },

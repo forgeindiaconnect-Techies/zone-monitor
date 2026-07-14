@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const BranchSetting = require('../models/BranchSetting');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.use(authMiddleware);
 
 // GET all branch settings
 router.get('/', async (req, res) => {
   try {
-    const settings = await BranchSetting.find();
+    const settings = await BranchSetting.find({ companyId: req.companyId });
     res.json(settings);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -16,6 +19,7 @@ router.get('/', async (req, res) => {
 router.get('/:branchName', async (req, res) => {
   try {
     const setting = await BranchSetting.findOne({ 
+      companyId: req.companyId,
       branchName: { $regex: new RegExp(`^${req.params.branchName}$`, 'i') } 
     });
     if (!setting) {
@@ -32,10 +36,44 @@ router.post('/', async (req, res) => {
   try {
     const { branchName, latitude, longitude, radius, checkInStart, checkInEnd, checkOutTime } = req.body;
     
+    // Check plan limits
+    const Company = require('../models/Company');
+    const company = await Company.findOne({ code: req.companyId });
+    if (company) {
+      const plan = company.subscription;
+      let limit = -1;
+      if (plan === 'Basic') limit = 1;
+      else if (plan === 'Standard') limit = 5;
+
+      if (limit !== -1) {
+        const existing = await BranchSetting.findOne({ 
+          companyId: req.companyId, 
+          branchName: { $regex: new RegExp(`^${branchName}$`, 'i') } 
+        });
+        if (!existing) {
+          const count = await BranchSetting.countDocuments({ companyId: req.companyId });
+          if (count >= limit) {
+            return res.status(403).json({ 
+              message: `Plan Limit Exceeded: Your current plan (${plan}) only allows up to ${limit} branch. Please upgrade to create more.` 
+            });
+          }
+        }
+      }
+    }
+
+    const existingBefore = await BranchSetting.findOne({ 
+      companyId: req.companyId,
+      branchName: { $regex: new RegExp(`^${branchName}$`, 'i') } 
+    });
+
     // Upsert the setting
     const setting = await BranchSetting.findOneAndUpdate(
-      { branchName: { $regex: new RegExp(`^${branchName}$`, 'i') } },
+      { 
+        companyId: req.companyId,
+        branchName: { $regex: new RegExp(`^${branchName}$`, 'i') } 
+      },
       {
+        companyId: req.companyId,
         branchName,
         latitude,
         longitude,
@@ -46,6 +84,22 @@ router.post('/', async (req, res) => {
       },
       { new: true, upsert: true }
     );
+    
+    if (!existingBefore) {
+      const Notification = require('../models/Notification');
+      const newNotification = await Notification.create({
+        companyId: req.companyId,
+        branchId: branchName,
+        type: 'Branch',
+        title: '🏢 New Branch Added',
+        message: `${branchName} Branch created under your company.`,
+        createdBy: req.user ? req.user.name : 'System'
+      });
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_notification', newNotification);
+      }
+    }
     
     res.json(setting);
   } catch (err) {

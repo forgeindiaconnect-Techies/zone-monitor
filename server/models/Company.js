@@ -1,0 +1,41 @@
+const mongoose = require('mongoose');
+
+const companySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  code: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    uppercase: true
+  },
+  subscription: {
+    type: String,
+    enum: ['One Day Trial', 'Basic', 'Standard', 'Enterprise'],
+    default: 'Basic'
+  },
+  status: {
+    type: String,
+    enum: ['Active', 'Inactive', 'Suspended'],
+    default: 'Active'
+  },
+  subscriptionExpiresAt: {
+    type: Date,
+    required: true
+  }
+}, { timestamps: true });
+
+// Transform _id to id in JSON response
+companySchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: function (doc, ret) {
+    delete ret._id;
+  }
+});
+
+module.exports = mongoose.model('Company', companySchema);

@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const zoneSchema = new mongoose.Schema({
+  companyId: {
+    type: String,
+    required: true,
+    default: 'FIC001',
+    index: true
+  },
   name: {
     type: String,
     required: true,

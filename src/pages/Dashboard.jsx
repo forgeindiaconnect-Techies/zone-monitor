@@ -5,6 +5,7 @@ import MDDashboard from './dashboards/MDDashboard';
 import AdminDashboard from './dashboards/AdminDashboard';
 import SecurityDashboard from './dashboards/SecurityDashboard';
 import VisitorDashboard from './dashboards/VisitorDashboard';
+import SaaSPlatformDashboard from './dashboards/SaaSPlatformDashboard';
 
 const DashboardRouter = () => {
   const { user } = useAuth();
@@ -13,6 +14,8 @@ const DashboardRouter = () => {
   if (!user) return null;
 
   switch (user.role) {
+    case 'SaaS Super Admin':
+      return <SaaSPlatformDashboard />;
     case 'MD':
       return <MDDashboard />;
     case 'Admin':

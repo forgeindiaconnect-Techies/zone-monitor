@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const visitorSchema = new mongoose.Schema({
+  companyId: {
+    type: String,
+    required: true,
+    default: 'FIC001',
+    index: true
+  },
   visitorProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'VisitorProfile' },
   profileId: { type: String, required: true },
   visitId: { type: String, unique: true },

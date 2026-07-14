@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const securityAttendanceSchema = new mongoose.Schema(
   {
+    companyId: {
+      type: String,
+      required: true,
+      default: 'FIC001',
+      index: true
+    },
     attendanceId: {
       type: String,
       required: true,

@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const SecurityAttendance = require('../models/SecurityAttendance');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.use(authMiddleware);
 
 // Utility to generate attendance ID
-const generateAttendanceId = async () => {
-  const count = await SecurityAttendance.countDocuments();
+const generateAttendanceId = async (companyId) => {
+  const count = await SecurityAttendance.countDocuments({ companyId });
   return `ATT${(count + 1).toString().padStart(4, '0')}`;
 };
 
 // GET attendance records
 router.get('/', async (req, res) => {
   try {
-    let query = {};
+    let query = { companyId: req.companyId };
     if (req.query.branch) {
       const branchUpper = req.query.branch.toUpperCase();
       let searchRegexStr = req.query.branch;
@@ -46,14 +49,15 @@ router.post('/checkin', async (req, res) => {
     const { securityId, securityName, branch, date, checkInTime, checkInPhoto, checkInLocation } = req.body;
     
     // Check if already checked in today
-    const existing = await SecurityAttendance.findOne({ securityId, date });
+    const existing = await SecurityAttendance.findOne({ companyId: req.companyId, securityId, date });
     if (existing) {
       return res.status(400).json({ message: 'Already checked in today' });
     }
 
-    const attendanceId = await generateAttendanceId();
+    const attendanceId = await generateAttendanceId(req.companyId);
     
     const attendance = new SecurityAttendance({
+      companyId: req.companyId,
       attendanceId,
       securityId,
       securityName,
@@ -66,6 +70,22 @@ router.post('/checkin', async (req, res) => {
     });
 
     const saved = await attendance.save();
+
+    const Notification = require('../models/Notification');
+    const notification = await Notification.create({
+      companyId: req.companyId,
+      branchId: branch,
+      type: 'Attendance',
+      title: '🕒 Security Attendance',
+      message: `${securityName} checked in at ${checkInTime}.`,
+      createdBy: securityName
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_notification', notification);
+    }
+
     res.status(201).json(saved);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -77,8 +97,8 @@ router.patch('/checkout/:id', async (req, res) => {
   try {
     const { checkOutTime, workingHours, checkOutPhoto, checkOutLocation } = req.body;
     
-    const attendance = await SecurityAttendance.findByIdAndUpdate(
-      req.params.id,
+    const attendance = await SecurityAttendance.findOneAndUpdate(
+      { _id: req.params.id, companyId: req.companyId },
       { 
         checkOutTime, 
         checkOutPhoto,
@@ -91,6 +111,21 @@ router.patch('/checkout/:id', async (req, res) => {
     
     if (!attendance) {
       return res.status(404).json({ message: 'Attendance record not found' });
+    }
+
+    const Notification = require('../models/Notification');
+    const notification = await Notification.create({
+      companyId: req.companyId,
+      branchId: attendance.branch,
+      type: 'Attendance',
+      title: '🚪 Security Checked Out',
+      message: `${attendance.securityName} checked out at ${checkOutTime}.`,
+      createdBy: attendance.securityName
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_notification', notification);
     }
     
     res.json(attendance);
