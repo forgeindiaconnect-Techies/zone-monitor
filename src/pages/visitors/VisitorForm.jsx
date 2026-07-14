@@ -4,6 +4,7 @@ import { useBlacklist } from '../../context/BlacklistContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useBranch } from '../../context/BranchContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Upload, User, Calendar, FileText, Camera, IdCard, Info, Search, AlertCircle, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Webcam from 'react-webcam';
