@@ -99,8 +99,8 @@ const ReportsDashboard = () => {
     const headers = Object.keys(data[0]);
     
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto print:overflow-visible">
+        <table className="w-full text-left border-collapse print:table-fixed print:w-full">
           <thead>
             <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider">
               {headers.map(h => <th key={h} className="px-6 py-4 font-medium">{h}</th>)}
@@ -135,13 +135,13 @@ const ReportsDashboard = () => {
   const checkedOutVisitors = filteredVisitors.filter(v => ['Exited', 'Completed'].includes(v.status)).length;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 print-friendly">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+    <div className="space-y-6 animate-in fade-in duration-500 print:animate-none print-friendly">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">System Reports</h1>
-          <p className="text-gray-500 mt-1">Generate and export data across all modules.</p>
+          <p className="text-gray-500 mt-1 print:hidden">Generate and export data across all modules.</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 print:hidden">
           <button 
             onClick={() => exportExcel(activeTab === 'security' ? [
               { "Total Visitors": totalVisitors, "Approved": approvedVisitors, "Rejected": rejectedVisitors, "Inside": insideVisitors, "Checked Out": checkedOutVisitors }
@@ -161,7 +161,7 @@ const ReportsDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print:overflow-visible print:border-none print:shadow-none">
         
         {/* Tabs */}
         <div className="flex border-b border-gray-200 overflow-x-auto print:hidden">
