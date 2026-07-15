@@ -54,7 +54,7 @@ const SaaSPlatformDashboard = () => {
 
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
+  const API_BASE = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
   const getHeaders = () => {
     return {

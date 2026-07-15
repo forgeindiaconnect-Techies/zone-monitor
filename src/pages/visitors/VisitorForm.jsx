@@ -34,7 +34,7 @@ const VisitorForm = () => {
   React.useEffect(() => {
     const fetchHosts = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : '') : '');
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : 'https://zone-monitor.onrender.com') : '');
         const res = await fetch(`${API_URL}/api/users`);
         if (res.ok) {
           const data = await res.json();
@@ -82,7 +82,7 @@ const VisitorForm = () => {
 
   const checkBlacklist = async (mobileNumber) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : '');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : 'https://zone-monitor.onrender.com');
       const response = await fetch(`${API_URL}/api/blacklist/check/${mobileNumber}`, {
         headers: {
           'x-company-id': user?.companyId || 'FIC001',
@@ -132,7 +132,7 @@ const VisitorForm = () => {
     data.append('photo', file);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : '');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? `http://${networkIp}:5000` : 'https://zone-monitor.onrender.com');
       const response = await fetch(`${API_URL}/api/visitors/upload`, {
         method: 'POST',
         body: data,
