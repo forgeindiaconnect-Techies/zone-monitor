@@ -6,7 +6,44 @@ const logAction = require('../utils/auditLogger');
 // POST login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, mobileNumber } = req.body;
+    
+    // Check if this is a Security mobile-only login
+    if (mobileNumber && !email && !password) {
+      const user = await User.findOne({ mobileNumber, role: 'Security' });
+      if (!user) {
+        return res.status(401).json({ message: 'No security account found for this mobile number' });
+      }
+      
+      // Check company status
+      const Company = require('../models/Company');
+      const company = await Company.findOne({ code: user.companyId });
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+      
+      // Build response payload
+      const u = user.toJSON();
+      delete u.password;
+      
+      const responsePayload = {
+        ...u,
+        companyName: company.name,
+        isExpired: false,
+        subscription: company.subscription,
+        subscriptionExpiresAt: company.subscriptionExpiresAt
+      };
+      
+      // Log action
+      await logAction(req, 'Login (Mobile)', 'Authentication', {
+        companyId: responsePayload.companyId,
+        companyName: responsePayload.companyName,
+        userName: responsePayload.name,
+        role: responsePayload.role
+      });
+      
+      return res.json(responsePayload);
+    }
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
