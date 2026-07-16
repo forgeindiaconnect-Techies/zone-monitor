@@ -120,8 +120,8 @@ const SecurityDashboard = () => {
         latitude: 12.5269722,
         longitude: 78.2025000,
         radius: 50,
-        checkInStart: '08:30',
-        checkInEnd: '09:30',
+        checkInStart: '08:00',
+        checkInEnd: '10:30',
         checkOutTime: '20:00'
       };
     }
