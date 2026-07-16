@@ -37,6 +37,20 @@ import Subscription from './pages/settings/Subscription';
 
 import AuditLogs from './pages/dashboards/AuditLogs';
 
+const BrandInjector = () => {
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    if (user?.branding?.primaryColor) {
+      document.documentElement.style.setProperty('--color-brand-indigo', user.branding.primaryColor);
+    } else {
+      document.documentElement.style.setProperty('--color-brand-indigo', '#1E1B6E'); // Default
+    }
+  }, [user]);
+
+  return null;
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -44,10 +58,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
   
-  const isSubscriptionRoute = window.location.pathname === '/subscription';
-  if (user.isExpired && !isSubscriptionRoute && user.role !== 'SaaS Super Admin') {
-     return <Navigate to="/subscription" replace />;
-  }
+  // Expiry is now handled by the SubscriptionModals overlay in MainLayout
+  // so we don't force a redirect here anymore.
   
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />; // Redirect to dashboard if unauthorized
@@ -101,24 +113,25 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <BranchProvider>
-          <AttendanceProvider>
-            <VisitorProvider>
-              <ZoneProvider>
-                <BlacklistProvider>
-                  <Router>
+    <Router>
+      <AuthProvider>
+        <BrandInjector />
+        <NotificationProvider>
+          <BranchProvider>
+            <AttendanceProvider>
+              <VisitorProvider>
+                <ZoneProvider>
+                  <BlacklistProvider>
                     <AppRoutes />
                     <ToastContainer />
-                  </Router>
-                </BlacklistProvider>
-              </ZoneProvider>
-            </VisitorProvider>
-          </AttendanceProvider>
-        </BranchProvider>
-      </NotificationProvider>
-    </AuthProvider>
+                  </BlacklistProvider>
+                </ZoneProvider>
+              </VisitorProvider>
+            </AttendanceProvider>
+          </BranchProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -166,7 +166,7 @@ const VisitorList = () => {
         </div>
 
         <div className="overflow-x-auto min-h-[400px] w-full">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-4 font-medium">Visitor</th>
@@ -183,7 +183,7 @@ const VisitorList = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredVisitors.map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 rounded-full bg-indigo-100 text-[var(--color-brand-indigo)] flex items-center justify-center font-bold mr-3">
                         {(visitor.visitorName || 'U').charAt(0)}
@@ -208,8 +208,8 @@ const VisitorList = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{visitor.companyName}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{visitor.hostName}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{visitor.companyName}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{visitor.hostName}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{visitor.visitDate}</td>
                   <td className="px-6 py-4">
                     {visitor.status === 'Exited' ? (

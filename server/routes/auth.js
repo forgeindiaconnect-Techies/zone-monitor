@@ -74,8 +74,43 @@ router.post('/login', async (req, res) => {
         }
       }
       
+      // Block login if expired
+      if (isExpired && user.role !== 'SaaS Super Admin') {
+        return res.status(403).json({ message: 'Your company subscription has expired. Please contact your SaaS administrator.' });
+      }
+      
       subscription = company.subscription;
       subscriptionExpiresAt = company.subscriptionExpiresAt;
+
+      // Automatic Expiration Notifications (Step 4)
+      if (!isExpired && company.subscriptionExpiresAt && (user.role === 'Admin' || user.role === 'MD' || user.role === 'Company Admin' || user.role === 'Super Admin')) {
+        const diffTime = new Date(company.subscriptionExpiresAt) - new Date();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if ([30, 15, 7, 1].includes(diffDays)) {
+          const Notification = require('../models/Notification');
+          
+          // Only create one notification per day for this company to avoid spam on every login
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const existingNotif = await Notification.findOne({
+            companyId: company.code,
+            type: 'Subscription',
+            createdAt: { $gte: startOfDay }
+          });
+
+          if (!existingNotif) {
+            await Notification.create({
+              companyId: company.code,
+              type: 'Subscription',
+              title: '⚠️ Subscription Expiring Soon',
+              message: `Your ${subscription} plan expires in ${diffDays} day${diffDays > 1 ? 's' : ''}. Renew now to avoid service interruption.`,
+              createdBy: 'System'
+            });
+          }
+        }
+      }
     }
 
     // Return user data without password
@@ -88,7 +123,8 @@ router.post('/login', async (req, res) => {
       companyName: company ? company.name : (u.companyId === 'SYSTEM' ? 'System Administration' : undefined),
       isExpired,
       subscription,
-      subscriptionExpiresAt
+      subscriptionExpiresAt,
+      branding: company?.branding || { logoUrl: '', primaryColor: '#1E1B6E' }
     };
 
     // Log the action manually since req.user isn't set yet

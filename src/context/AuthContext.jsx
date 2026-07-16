@@ -41,6 +41,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('zmvms_user');
     sessionStorage.removeItem('zmvms_user');
+    localStorage.removeItem('zmvms_visitors');
+    sessionStorage.removeItem('zmvms_visitors');
   };
 
   return (

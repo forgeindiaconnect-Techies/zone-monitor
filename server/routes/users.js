@@ -90,18 +90,28 @@ router.post('/', async (req, res) => {
       userBranch = req.body.creatorBranch || req.body.branch;
     }
 
-    // Enforce Plan Limits for Security Staff role
-    if (req.body.role === 'Security') {
+    // Enforce Plan Limits for Security and Admin Staff
+    if (['Security', 'Admin', 'Branch Admin', 'MD', 'Company Admin'].includes(req.body.role)) {
       const Company = require('../models/Company');
       const planLimits = require('../config/plans');
       const company = await Company.findOne({ code: req.companyId });
       if (company && company.subscription) {
         const limits = planLimits[company.subscription];
-        if (limits && limits.securityUsers !== -1) {
+        
+        if (req.body.role === 'Security' && limits && limits.securityUsers !== -1) {
           const count = await User.countDocuments({ companyId: req.companyId, role: 'Security' });
           if (count >= limits.securityUsers) {
             return res.status(403).json({ 
               message: `Maximum security users reached. Your current plan (${company.subscription}) only allows up to ${limits.securityUsers} security staff members. Please upgrade your plan.` 
+            });
+          }
+        }
+        
+        if (['Admin', 'Branch Admin', 'MD', 'Company Admin'].includes(req.body.role) && limits && limits.admins !== -1) {
+          const count = await User.countDocuments({ companyId: req.companyId, role: { $in: ['Admin', 'Branch Admin', 'MD', 'Company Admin'] } });
+          if (count >= limits.admins) {
+            return res.status(403).json({ 
+              message: `Maximum admin users reached. Your current plan (${company.subscription}) only allows up to ${limits.admins} admin members. Please upgrade your plan.` 
             });
           }
         }

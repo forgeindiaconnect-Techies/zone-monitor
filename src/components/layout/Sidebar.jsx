@@ -44,7 +44,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   return (
     <aside className={`w-64 bg-[var(--color-brand-indigo)] text-white h-screen fixed top-0 left-0 flex flex-col shadow-xl z-20 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
-        <h1 className="text-xl font-bold tracking-wider truncate">{user?.companyName || 'FIC VMS'}</h1>
+        {user?.branding?.logoUrl ? (
+          <img src={user.branding.logoUrl} alt="Logo" className="h-8 max-w-[150px] object-contain" />
+        ) : (
+          <h1 className="text-xl font-bold tracking-wider truncate">{user?.companyName || 'FIC VMS'}</h1>
+        )}
         <button 
           className="md:hidden text-white/70 hover:text-white"
           onClick={() => setIsOpen(false)}

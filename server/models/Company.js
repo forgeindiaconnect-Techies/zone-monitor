@@ -23,6 +23,10 @@ const companySchema = new mongoose.Schema({
     enum: ['Active', 'Inactive', 'Suspended', 'Expired'],
     default: 'Active'
   },
+  branding: {
+    logoUrl: { type: String, default: '' },
+    primaryColor: { type: String, default: '#1E1B6E' }
+  },
   subscriptionExpiresAt: {
     type: Date,
     required: true

@@ -10,7 +10,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const logAction = require('../utils/auditLogger');
 
 router.use((req, res, next) => {
-  if (req.path.startsWith('/pass/') || req.path === '/upload') {
+  if (req.path.startsWith('/pass/')) {
     return next();
   }
   authMiddleware(req, res, next);
@@ -20,7 +20,12 @@ router.use((req, res, next) => {
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'zmvms_visitors',
+    folder: (req, file) => {
+      const company = req.companyId || 'UNKNOWN_COMPANY';
+      const branch = req.branchId || req.headers['x-branch-id'] || 'General';
+      const cleanBranch = branch.replace(/[^a-zA-Z0-9]/g, '_');
+      return `fic-vms/${company}/${cleanBranch}`;
+    },
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [{ width: 500, height: 500, crop: 'limit' }]
   },
@@ -61,7 +66,9 @@ router.get('/todays-summary', async (req, res) => {
       }
     };
 
-    if (branchId && branchId !== 'All Branches') {
+    if (req.userRole === 'Security' || req.userRole === 'Admin' || req.userRole === 'MD') {
+       matchStage.branch = req.branchId;
+    } else if (branchId && branchId !== 'All Branches') {
       const branchUpper = branchId.toUpperCase();
       const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       let searchRegexStr = escapeRegExp(branchId);
@@ -108,24 +115,26 @@ router.get('/todays-summary', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     let query = { companyId: req.companyId };
-    if (req.query.branch) {
-      const branchUpper = req.query.branch.toUpperCase();
-      
-      // Escape special characters in the branch name for regex
-      const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      let searchRegexStr = escapeRegExp(req.query.branch);
-      
-      // Map new branch names to legacy test data
-      if (branchUpper.includes('THIRUPATTUR')) {
-        searchRegexStr = `${searchRegexStr}|Tirupattur`;
-      } else if (branchUpper.includes('KRISHNAGIRI')) {
-        searchRegexStr = `${searchRegexStr}|Salem`;
-      } else if (branchUpper === 'BANGALORE') {
-        searchRegexStr = `${searchRegexStr}|Bangalore`;
-      }
-      
-      query.branch = { $regex: new RegExp(`^(${searchRegexStr})$`, 'i') };
+    
+    // Enforce strict branch isolation based on role
+    if (req.userRole === 'Security' || req.userRole === 'Admin' || req.userRole === 'MD') {
+       query.branch = req.branchId;
+    } else if (req.query.branch && req.query.branch !== 'All Branches') {
+       // Super Admins can filter by branch
+       const branchUpper = req.query.branch.toUpperCase();
+       const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+       let searchRegexStr = escapeRegExp(req.query.branch);
+       
+       if (branchUpper.includes('THIRUPATTUR')) {
+         searchRegexStr = `${searchRegexStr}|Tirupattur`;
+       } else if (branchUpper.includes('KRISHNAGIRI')) {
+         searchRegexStr = `${searchRegexStr}|Salem`;
+       } else if (branchUpper === 'BANGALORE') {
+         searchRegexStr = `${searchRegexStr}|Bangalore`;
+       }
+       query.branch = { $regex: new RegExp(`^(${searchRegexStr})$`, 'i') };
     }
+    
     const visitors = await Visitor.find(query).sort({ createdAt: -1 });
     res.json(visitors);
   } catch (err) {

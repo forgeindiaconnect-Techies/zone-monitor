@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../context/AuthContext';
+import SubscriptionModals from '../subscription/SubscriptionModals';
 
 const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
@@ -50,6 +51,9 @@ const MainLayout = () => {
           </div>
         )}
 
+        {/* The Modals wrapper that handles the expiration locking layer */}
+        <SubscriptionModals />
+        
         <main className={`flex-1 p-4 md:p-6 ${!trialText ? 'mt-16' : ''} overflow-y-auto min-w-0 overflow-x-hidden print:block print:p-0 print:m-0 print:overflow-visible print:h-auto`}>
           <Outlet />
         </main>

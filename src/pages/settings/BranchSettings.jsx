@@ -9,7 +9,8 @@ const BranchSettings = () => {
   const { branches } = useBranch();
   const { addNotification } = useNotification();
   
-  const [selectedBranch, setSelectedBranch] = useState(branches[0] || '');
+  const [selectedBranch, setSelectedBranch] = useState(branches.length > 1 ? branches[1] : 'new');
+  const [newBranchName, setNewBranchName] = useState('');
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -22,8 +23,17 @@ const BranchSettings = () => {
   });
 
   useEffect(() => {
-    if (selectedBranch && selectedBranch !== 'All Branches') {
+    if (selectedBranch && selectedBranch !== 'All Branches' && selectedBranch !== 'new') {
       fetchBranchSettings(selectedBranch);
+    } else if (selectedBranch === 'new') {
+      setFormData({
+        latitude: '',
+        longitude: '',
+        radius: 50,
+        checkInStart: '08:00',
+        checkInEnd: '10:30',
+        checkOutTime: '20:00'
+      });
     }
   }, [selectedBranch]);
 
@@ -66,8 +76,10 @@ const BranchSettings = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!selectedBranch || selectedBranch === 'All Branches') {
-      addNotification('Error', 'Please select a valid branch', 'error');
+    const branchToSave = selectedBranch === 'new' ? newBranchName.trim() : selectedBranch;
+    
+    if (!branchToSave || branchToSave === 'All Branches') {
+      addNotification('Error', 'Please provide a valid branch name', 'error');
       return;
     }
 
@@ -76,7 +88,7 @@ const BranchSettings = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          branchName: selectedBranch,
+          branchName: branchToSave,
           latitude: parseFloat(formData.latitude),
           longitude: parseFloat(formData.longitude),
           radius: parseInt(formData.radius, 10),
@@ -87,9 +99,11 @@ const BranchSettings = () => {
       });
 
       if (res.ok) {
-        addNotification('Success', 'Branch settings saved successfully', 'success');
+        addNotification('Success', 'Branch settings saved successfully. Reloading...', 'success');
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        throw new Error('Failed to save settings');
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save settings');
       }
     } catch (err) {
       addNotification('Error', err.message, 'error');
@@ -114,12 +128,27 @@ const BranchSettings = () => {
           <select 
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)]"
+            className="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] mb-4"
           >
             {filteredBranches.map(branch => (
               <option key={branch} value={branch}>{branch}</option>
             ))}
+            <option value="new">+ Add New Branch</option>
           </select>
+          
+          {selectedBranch === 'new' && (
+            <div className="w-full md:w-1/2">
+               <label className="block text-sm font-medium text-gray-700 mb-2">New Branch Name *</label>
+               <input
+                  type="text"
+                  required
+                  value={newBranchName}
+                  onChange={(e) => setNewBranchName(e.target.value)}
+                  placeholder="e.g., MUMBAI OFFICE"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)]"
+               />
+            </div>
+          )}
         </div>
 
         {loading ? (

@@ -108,7 +108,7 @@ body {
   }
   
   /* Reset margins and layouts for main content and ALL parents */
-  body, html, #root, .min-h-screen, .h-screen, main {
+  body, html, #app, #root, .min-h-screen, .h-screen, main {
     display: block !important;
     height: auto !important;
     min-height: 0 !important;

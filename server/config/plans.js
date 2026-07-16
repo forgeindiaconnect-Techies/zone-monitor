@@ -9,20 +9,23 @@ const planLimits = {
   'Basic': {
     visitors: 500,
     securityUsers: 5,
-    branches: 2,
+    admins: 2,
+    branches: 1,
     reports: true,
     price: 1999
   },
-  'Standard': {
+  'Professional': {
     visitors: -1, // -1 indicates unlimited
-    securityUsers: 20,
-    branches: 5,
+    securityUsers: 50,
+    admins: 10,
+    branches: 10,
     reports: true,
     price: 4999
   },
   'Enterprise': {
     visitors: -1,
     securityUsers: -1,
+    admins: -1,
     branches: -1,
     reports: true,
     price: 9999

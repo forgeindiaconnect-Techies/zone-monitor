@@ -2,7 +2,7 @@ const Notification = require('../models/Notification');
 
 exports.getNotifications = async (req, res) => {
   try {
-    const { role, companyId: userCompanyId, branch: userBranch } = req.user || {};
+    const role = req.userRole;
     let query = {};
 
     // Role-based filtering based on Step 4 of user request
@@ -11,17 +11,18 @@ exports.getNotifications = async (req, res) => {
       query.type = { $in: ['Tenant', 'Subscription', 'System', 'Branch', 'Admin', 'Announcement'] };
     } else if (role === 'Super Admin') {
       // Tenant Super Admin sees everything for their own company
-      query.companyId = req.companyId || userCompanyId;
-    } else if (role === 'Company Admin' || role === 'Admin') {
-      // Admin might just be branch admin in some setups, but here 'Company Admin' -> only their company
-      query.companyId = req.companyId || userCompanyId;
-    } else if (role === 'Branch Admin' || role === 'Security') {
-      // Only their branch activities
-      query.companyId = req.companyId || userCompanyId;
-      query.branchId = userBranch || req.query.branch;
+      query.companyId = req.companyId;
+    } else if (role === 'Admin' || role === 'MD' || role === 'Company Admin') {
+      // Admin sees their own branch
+      query.companyId = req.companyId;
+      query.branchId = req.branchId;
+    } else if (role === 'Security') {
+      // Security sees their own branch
+      query.companyId = req.companyId;
+      query.branchId = req.branchId;
     } else {
       // Fallback
-      query.companyId = req.companyId || userCompanyId;
+      query.companyId = req.companyId;
     }
 
     // Explicit query overrides
@@ -31,7 +32,7 @@ exports.getNotifications = async (req, res) => {
     
     if (req.query.branchId || req.query.branch) {
       const b = req.query.branchId || req.query.branch;
-      if (role === 'SaaS Super Admin' || role === 'Super Admin' || role === 'Company Admin' || role === 'Admin') {
+      if (role === 'SaaS Super Admin' || role === 'Super Admin') {
          query.branchId = b;
       }
     }
@@ -51,9 +52,9 @@ exports.markAsRead = async (req, res) => {
   try {
     const query = { _id: req.params.id };
     
-    // Safety check if not Super Admin
-    if (req.user && req.user.role !== 'SaaS Super Admin' && req.user.role !== 'Super Admin') {
-       query.companyId = req.companyId || req.user.companyId;
+    // Safety check if not SaaS Super Admin
+    if (req.userRole !== 'SaaS Super Admin') {
+       query.companyId = req.companyId;
     }
 
     const notification = await Notification.findOneAndUpdate(
@@ -72,13 +73,13 @@ exports.markAsRead = async (req, res) => {
 
 exports.markAllAsRead = async (req, res) => {
   try {
-    const { role, companyId: userCompanyId, branch: userBranch } = req.user || {};
+    const role = req.userRole;
     let query = { isRead: false };
 
-    if (role !== 'SaaS Super Admin' && role !== 'Super Admin') {
-       query.companyId = req.companyId || userCompanyId;
-       if (role === 'Branch Admin' || role === 'Security') {
-         query.branchId = userBranch;
+    if (role !== 'SaaS Super Admin') {
+       query.companyId = req.companyId;
+       if (role === 'Security' || role === 'Admin' || role === 'MD') {
+         query.branchId = req.branchId;
        }
     }
 
@@ -93,8 +94,8 @@ exports.deleteNotification = async (req, res) => {
   try {
     const query = { _id: req.params.id };
     
-    if (req.user && req.user.role !== 'SaaS Super Admin' && req.user.role !== 'Super Admin') {
-       query.companyId = req.companyId || req.user.companyId;
+    if (req.userRole !== 'SaaS Super Admin') {
+       query.companyId = req.companyId;
     }
 
     const notification = await Notification.findOneAndDelete(query);

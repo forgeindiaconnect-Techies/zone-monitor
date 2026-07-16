@@ -40,10 +40,18 @@ export const VisitorProvider = ({ children }) => {
         ? `${API_URL}?branch=${encodeURIComponent(queryBranch)}` 
         : API_URL;
       
+      const headers = currentUser?.token ? { 'Authorization': `Bearer ${currentUser.token}` } : {};
+      if (currentUser) {
+        headers['x-user-id'] = currentUser.id || currentUser._id;
+        headers['x-company-id'] = currentUser.companyId;
+        headers['x-user-role'] = currentUser.role;
+        headers['x-branch-id'] = currentUser.branch;
+      }
+      
       console.log('Fetching visitors from API...', fetchUrl);
       const response = await fetch(fetchUrl, { 
         cache: 'no-store',
-        headers: currentUser?.token ? { 'Authorization': `Bearer ${currentUser.token}` } : {}
+        headers
       });
       if (response.ok) {
         const data = await response.json();
@@ -259,7 +267,7 @@ export const VisitorProvider = ({ children }) => {
 
   // Keep local storage updated as a backup
   useEffect(() => {
-    if (allVisitors.length > 0) {
+    if (allVisitors) {
       localStorage.setItem('zmvms_visitors', JSON.stringify(allVisitors));
     }
   }, [allVisitors]);

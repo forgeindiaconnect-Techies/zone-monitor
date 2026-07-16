@@ -8,14 +8,56 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    }, 800);
+    
+    if (activeTab === 'brand') {
+      try {
+        const logoUrl = document.getElementById('brand-logo').value;
+        const primaryColor = document.getElementById('brand-color').value;
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/company/branding`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-Company-Id': user.companyId,
+            'X-User-Role': user.role
+          },
+          body: JSON.stringify({ logoUrl, primaryColor })
+        });
+        
+        if (response.ok) {
+          const updatedBranding = await response.json();
+          // Update the context user object slightly by mutating session/local storage for persistence
+          const currentUser = JSON.parse(localStorage.getItem('zmvms_user') || sessionStorage.getItem('zmvms_user'));
+          if (currentUser) {
+            currentUser.branding = updatedBranding;
+            if (localStorage.getItem('zmvms_user')) localStorage.setItem('zmvms_user', JSON.stringify(currentUser));
+            if (sessionStorage.getItem('zmvms_user')) sessionStorage.setItem('zmvms_user', JSON.stringify(currentUser));
+          }
+          
+          // Force apply CSS immediately
+          document.documentElement.style.setProperty('--color-brand-indigo', primaryColor);
+          
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
+        } else {
+          alert('Failed to update brand settings. Ensure you have Super Admin permissions.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error while saving.');
+      }
+    } else {
+      // Fake save for other tabs
+      setTimeout(() => {
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      }, 800);
+    }
+    setIsSaving(false);
   };
 
   const inputClass = "w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-[var(--color-brand-indigo)] outline-none transition-all";
@@ -54,6 +96,14 @@ const Settings = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'system' ? 'bg-indigo-50 text-[var(--color-brand-indigo)]' : 'text-gray-600 hover:bg-white hover:text-gray-900'}`}
             >
               <Shield size={18} /> System Preferences
+            </button>
+          )}
+          {user?.role === 'Super Admin' && ['Standard', 'Enterprise'].includes(user?.subscription) && (
+            <button 
+              onClick={() => setActiveTab('brand')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'brand' ? 'bg-indigo-50 text-[var(--color-brand-indigo)]' : 'text-gray-600 hover:bg-white hover:text-gray-900'}`}
+            >
+              <Shield size={18} /> Brand & Theme
             </button>
           )}
         </div>
@@ -153,6 +203,38 @@ const Settings = () => {
                       <option value="IST">India Standard Time (IST)</option>
                       <option value="UTC">Coordinated Universal Time (UTC)</option>
                     </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'brand' && (
+              <div className="space-y-6 flex-1 animate-in slide-in-from-right-4">
+                <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-4">Brand & Theme</h2>
+                <p className="text-sm text-gray-500 mb-6">Customize the look and feel of your Visitor Management System. Refresh the page after saving to see changes applied globally.</p>
+                <div className="grid grid-cols-1 gap-6 max-w-2xl">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Logo URL</label>
+                    <input 
+                      type="url" 
+                      id="brand-logo"
+                      placeholder="https://example.com/logo.png" 
+                      defaultValue={user?.branding?.logoUrl || ''} 
+                      className={inputClass} 
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Provide a direct URL to a publicly accessible image (PNG/JPG).</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Primary Brand Color</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="color" 
+                        id="brand-color"
+                        defaultValue={user?.branding?.primaryColor || '#1E1B6E'} 
+                        className="w-16 h-12 p-1 border border-gray-200 rounded cursor-pointer" 
+                      />
+                      <span className="text-sm font-medium text-gray-600">Select your company's primary color.</span>
+                    </div>
                   </div>
                 </div>
               </div>

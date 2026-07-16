@@ -40,19 +40,38 @@ router.get('/me', async (req, res) => {
 // POST request an upgrade from the SaaS Super Admin
 router.post('/request-upgrade', async (req, res) => {
   try {
+    const { requestedPlan, amount, durationDays } = req.body;
+    
+    if (!requestedPlan || !amount || !durationDays) {
+      return res.status(400).json({ message: 'Missing required upgrade details' });
+    }
+
     const Company = require('../models/Company');
     const Notification = require('../models/Notification');
+    const UpgradeRequest = require('../models/UpgradeRequest');
+    
     const company = await Company.findOne({ code: req.companyId });
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
+    
+    // Create Upgrade Request record
+    const upgradeReq = await UpgradeRequest.create({
+      companyId: company.code,
+      companyName: company.name,
+      requestedPlan,
+      amount,
+      durationDays,
+      status: 'Pending',
+      requestedBy: req.userId || 'System'
+    });
 
     // Send a notification to the SaaS Super Admin (SYSTEM)
     const newNotif = await Notification.create({
       companyId: 'SYSTEM',
-      type: 'Tenant',
+      type: 'Subscription',
       title: '📈 Subscription Upgrade Requested',
-      message: `${company.name} (${company.code}) has requested a subscription upgrade. Their current plan is ${company.subscription}.`,
+      message: `${company.name} requested to upgrade to ${requestedPlan} for ₹${amount}.`,
       createdBy: req.userRole || 'System'
     });
 
@@ -112,6 +131,43 @@ router.get('/usage', async (req, res) => {
         branches: branchCount
       }
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH /api/company/branding - Update tenant branding
+router.patch('/branding', async (req, res) => {
+  try {
+    const { logoUrl, primaryColor } = req.body;
+    
+    // Only the Super Admin of the company can change branding
+    if (req.userRole !== 'Super Admin') {
+      return res.status(403).json({ message: 'Forbidden: Only Super Admin can update branding' });
+    }
+
+    const Company = require('../models/Company');
+    const company = await Company.findOne({ code: req.companyId });
+    
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    
+    // Check if the plan allows custom branding
+    if (!['Standard', 'Enterprise'].includes(company.subscription)) {
+      return res.status(403).json({ message: 'Custom branding requires Standard or Enterprise plan.' });
+    }
+
+    if (logoUrl !== undefined) company.branding.logoUrl = logoUrl;
+    if (primaryColor !== undefined) company.branding.primaryColor = primaryColor;
+    
+    await company.save();
+    
+    await logAction(req, 'Update Branding', 'Configuration', {
+      primaryColor: company.branding.primaryColor
+    });
+
+    res.json(company.branding);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

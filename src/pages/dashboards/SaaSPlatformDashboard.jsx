@@ -23,6 +23,7 @@ const SaaSPlatformDashboard = () => {
   const [companies, setCompanies] = useState([]);
   const [payments, setPayments] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [upgradeRequests, setUpgradeRequests] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -60,6 +61,14 @@ const SaaSPlatformDashboard = () => {
   const [upgradeData, setUpgradeData] = useState({ plan: 'Standard', durationDays: '30' });
 
   const [isRegistering, setIsRegistering] = useState(false);
+
+  const handleCardClick = (tabName) => {
+    setActiveTab(tabName);
+    const panel = document.getElementById('main-panel');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const API_BASE = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
@@ -109,6 +118,15 @@ const SaaSPlatformDashboard = () => {
       const auditData = await auditRes.json();
       setAuditLogs(auditData);
 
+      // Fetch upgrade requests
+      const upgradeRes = await fetch(`${API_BASE}/api/super-admin/upgrade-requests`, {
+        headers: getHeaders()
+      });
+      if (upgradeRes.ok) {
+        const upgradeData = await upgradeRes.json();
+        setUpgradeRequests(upgradeData);
+      }
+
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message);
@@ -124,6 +142,25 @@ const SaaSPlatformDashboard = () => {
   const showToast = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
+  };
+
+  const handleProcessUpgradeRequest = async (id, status) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/super-admin/upgrade-requests/${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ status })
+      });
+      if (response.ok) {
+        showToast(`Request ${status} successfully`);
+        fetchData();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to process request');
+      }
+    } catch (err) {
+      alert('Network error while processing request');
+    }
   };
 
   // Handle delete company (with cascade)
@@ -340,33 +377,33 @@ const SaaSPlatformDashboard = () => {
           value={analytics ? analytics.totalCompanies : '-'} 
           icon={Building} 
           colorClass="bg-blue-50 text-blue-600 border border-blue-100" 
-          onClick={() => setActiveTab('Companies')}
+          onClick={() => handleCardClick('Companies')}
         />
         <DashboardCard 
           title="Active Subscriptions" 
           value={analytics ? analytics.activeCompanies : '-'} 
           icon={UserCheck} 
           colorClass="bg-green-50 text-green-600 border border-green-100" 
-          onClick={() => setActiveTab('Subscriptions')}
+          onClick={() => handleCardClick('Subscriptions')}
         />
         <DashboardCard 
           title="Expired Subscriptions" 
           value={analytics ? analytics.inactiveCompanies : '-'} 
           icon={ShieldAlert} 
           colorClass="bg-red-50 text-red-600 border border-red-100" 
-          onClick={() => setActiveTab('Subscriptions')}
+          onClick={() => handleCardClick('Subscriptions')}
         />
         <DashboardCard 
           title="Monthly Revenue" 
           value={analytics ? `₹${analytics.monthlyRevenue.toLocaleString('en-IN')}` : '-'} 
           icon={CreditCard} 
           colorClass="bg-indigo-50 text-indigo-600 border border-indigo-100" 
-          onClick={() => setActiveTab('Payments')}
+          onClick={() => handleCardClick('Payments')}
         />
       </div>
 
       {/* Main Panel */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      <div id="main-panel" className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         <div className="border-b border-gray-200 bg-slate-50 flex items-center px-4 space-x-1">
           <button 
             onClick={() => setActiveTab('Companies')}
@@ -392,6 +429,17 @@ const SaaSPlatformDashboard = () => {
           >
             Audit Logs
           </button>
+          <button 
+            onClick={() => setActiveTab('Upgrade Requests')}
+            className={`px-6 py-4 font-semibold text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'Upgrade Requests' ? 'border-[#1E1B6E] text-[#1E1B6E]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-slate-100'}`}
+          >
+            Upgrade Requests
+            {upgradeRequests.filter(req => req.status === 'Pending').length > 0 && (
+              <span className="bg-red-500 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-full">
+                {upgradeRequests.filter(req => req.status === 'Pending').length}
+              </span>
+            )}
+          </button>
         </div>
 
         {activeTab === 'Companies' && (
@@ -416,7 +464,7 @@ const SaaSPlatformDashboard = () => {
                 <thead>
                   <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
                     <th className="px-6 py-4 font-medium">Company Name</th>
-                    <th className="px-6 py-4 font-medium">Company Code</th>
+                    <th className="px-6 py-4 font-medium">Company Details</th>
                     <th className="px-6 py-4 font-medium text-center">Branches</th>
                     <th className="px-6 py-4 font-medium text-center">Security Users</th>
                     <th className="px-6 py-4 font-medium text-center">Visitors</th>
@@ -429,7 +477,15 @@ const SaaSPlatformDashboard = () => {
                     <tr key={comp._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-gray-900">{comp.name}</td>
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs bg-slate-100 text-gray-700 px-2.5 py-1 rounded border border-slate-200 font-semibold">{comp.code}</span>
+                        <div className="flex flex-col gap-1.5">
+                          <span className="font-mono text-xs bg-slate-100 text-gray-700 px-2.5 py-1 rounded border border-slate-200 font-semibold w-max">
+                            {comp.code}
+                          </span>
+                          <div className="text-[10px] text-gray-500 flex flex-col">
+                            <span><strong className="text-gray-700">ID:</strong> {comp.adminEmail}</span>
+                            <span><strong className="text-gray-700">PWD:</strong> {comp.adminPassword}</span>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-700 text-xs">
                         {comp.branchCount || 0} / {comp.limits?.branches === -1 ? '∞' : comp.limits?.branches}
@@ -678,6 +734,89 @@ const SaaSPlatformDashboard = () => {
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center text-gray-500 font-medium bg-slate-50/50">
                         No audit logs available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'Upgrade Requests' && (
+          <>
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Pending Upgrade Requests</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Approve or reject subscription upgrades requested by tenants.</p>
+            </div>
+            
+            <div className="overflow-x-auto pb-2">
+              <table className="w-full text-left border-collapse min-w-max">
+                <thead>
+                  <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
+                    <th className="px-6 py-4 font-medium">Company</th>
+                    <th className="px-6 py-4 font-medium">Requested Plan</th>
+                    <th className="px-6 py-4 font-medium">Amount</th>
+                    <th className="px-6 py-4 font-medium">Duration</th>
+                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-6 py-4 font-medium">Requested On</th>
+                    <th className="px-6 py-4 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {upgradeRequests.map((req) => (
+                    <tr key={req._id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {req.companyName}
+                        <div className="text-xs text-gray-500 font-normal">{req.companyId}</div>
+                      </td>
+                      <td className="px-6 py-4 font-bold text-[#1E1B6E] text-sm">
+                        {req.requestedPlan}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-700">
+                        ₹{req.amount}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {req.durationDays} Days
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          req.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          req.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-gray-600">
+                        {new Date(req.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        {req.status === 'Pending' ? (
+                          <>
+                            <button 
+                              onClick={() => handleProcessUpgradeRequest(req._id, 'Approved')}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              onClick={() => handleProcessUpgradeRequest(req._id, 'Rejected')}
+                              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold rounded-lg transition-colors ml-2"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 font-semibold italic">Processed</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {upgradeRequests.length === 0 && !loading && (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-12 text-center text-gray-500 font-medium bg-slate-50/50">
+                        No upgrade requests found.
                       </td>
                     </tr>
                   )}

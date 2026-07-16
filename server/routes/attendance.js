@@ -15,7 +15,11 @@ const generateAttendanceId = async (companyId) => {
 router.get('/', async (req, res) => {
   try {
     let query = { companyId: req.companyId };
-    if (req.query.branch) {
+    
+    // Enforce strict branch isolation based on role
+    if (req.userRole === 'Security' || req.userRole === 'Admin' || req.userRole === 'MD') {
+       query.branch = req.branchId;
+    } else if (req.query.branch && req.query.branch !== 'All Branches') {
       const branchUpper = req.query.branch.toUpperCase();
       let searchRegexStr = req.query.branch;
       

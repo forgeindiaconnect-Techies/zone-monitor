@@ -24,6 +24,7 @@ router.get('/companies', async (req, res) => {
     
     const enriched = [];
     for (const comp of companies) {
+      const adminUser = await User.findOne({ companyId: comp.code, role: 'Super Admin' });
       const userCount = await User.countDocuments({ companyId: comp.code });
       const securityCount = await User.countDocuments({ companyId: comp.code, role: 'Security' });
       const visitorCount = await Visitor.countDocuments({ companyId: comp.code });
@@ -37,7 +38,9 @@ router.get('/companies', async (req, res) => {
         securityCount,
         visitorCount,
         branchCount,
-        limits
+        limits,
+        adminEmail: adminUser ? adminUser.email : 'N/A',
+        adminPassword: adminUser ? adminUser.password : 'N/A'
       });
     }
     res.json(enriched);
@@ -68,7 +71,11 @@ router.patch('/companies/:id', async (req, res) => {
     }
     
     if (durationDays) {
-      newExpiry = new Date();
+      if (comp.subscriptionExpiresAt && comp.status !== 'Expired' && new Date(comp.subscriptionExpiresAt) > new Date()) {
+        newExpiry = new Date(comp.subscriptionExpiresAt);
+      } else {
+        newExpiry = new Date();
+      }
       newExpiry.setDate(newExpiry.getDate() + parseInt(durationDays, 10));
       comp.subscriptionExpiresAt = newExpiry;
       subscriptionChanged = true;
@@ -275,6 +282,98 @@ router.get('/payments', async (req, res) => {
     const Payment = require('../models/Payment');
     const payments = await Payment.find().sort({ paymentDate: -1 });
     res.json(payments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET all upgrade requests
+router.get('/upgrade-requests', async (req, res) => {
+  try {
+    const UpgradeRequest = require('../models/UpgradeRequest');
+    const requests = await UpgradeRequest.find().sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH approve or reject an upgrade request
+router.patch('/upgrade-requests/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const UpgradeRequest = require('../models/UpgradeRequest');
+    const upgradeReq = await UpgradeRequest.findById(req.params.id);
+    
+    if (!upgradeReq) {
+      return res.status(404).json({ message: 'Upgrade request not found' });
+    }
+
+    if (upgradeReq.status !== 'Pending') {
+      return res.status(400).json({ message: `Request is already ${upgradeReq.status}` });
+    }
+
+    upgradeReq.status = status;
+    upgradeReq.processedBy = req.userId || 'System';
+    await upgradeReq.save();
+
+    if (status === 'Approved') {
+      // Find the company and update subscription
+      const company = await Company.findOne({ code: upgradeReq.companyId });
+      if (company) {
+        company.subscription = upgradeReq.requestedPlan;
+        
+        let newExpiry = company.subscriptionExpiresAt && company.status !== 'Expired' && new Date(company.subscriptionExpiresAt) > new Date()
+          ? new Date(company.subscriptionExpiresAt)
+          : new Date();
+          
+        newExpiry.setDate(newExpiry.getDate() + parseInt(upgradeReq.durationDays, 10));
+        company.subscriptionExpiresAt = newExpiry;
+        company.status = 'Active';
+        
+        company.upgradeHistory.push({
+          plan: company.subscription,
+          startDate: new Date(),
+          endDate: company.subscriptionExpiresAt,
+          updatedBy: req.userRole || 'SaaS Super Admin'
+        });
+        
+        await company.save();
+
+        // Create Payment record
+        const Payment = require('../models/Payment');
+        await Payment.create({
+          companyId: company.code,
+          companyName: company.name,
+          plan: company.subscription,
+          amount: upgradeReq.amount,
+          expiryDate: company.subscriptionExpiresAt,
+          durationDays: upgradeReq.durationDays,
+          processedBy: req.userRole || 'SaaS Super Admin',
+          status: 'Paid'
+        });
+
+        // Notify Tenant
+        const Notification = require('../models/Notification');
+        const newNotif = await Notification.create({
+          companyId: company.code,
+          type: 'Subscription',
+          title: '🎉 Congratulations',
+          message: `Your subscription has been upgraded to ${company.subscription}. It expires on ${company.subscriptionExpiresAt.toLocaleDateString()}.`,
+          createdBy: req.userRole || 'System'
+        });
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('new_notification', newNotif);
+        }
+      }
+    }
+
+    res.json(upgradeReq);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

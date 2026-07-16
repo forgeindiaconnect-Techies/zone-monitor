@@ -15,7 +15,7 @@ window.fetch = async function (url, options = {}) {
   );
 
   if (isApiCall && !isPublicCall) {
-    const savedUser = localStorage.getItem('zmvms_user');
+    const savedUser = localStorage.getItem('zmvms_user') || sessionStorage.getItem('zmvms_user');
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);

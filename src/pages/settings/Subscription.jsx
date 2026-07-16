@@ -32,28 +32,8 @@ const Subscription = () => {
     }
   };
 
-  const handleUpgradeRequest = async () => {
-    setRequesting(true);
-    try {
-      const url = `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/company/request-upgrade`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'X-Company-Id': user?.companyId
-        }
-      });
-      if (response.ok) {
-        alert('Upgrade request sent successfully to the SaaS Administrator.');
-      } else {
-        alert('Failed to send upgrade request.');
-      }
-    } catch (err) {
-      alert('Network error. Please try again later.');
-    } finally {
-      setRequesting(false);
-    }
+  const handleUpgradeRequest = () => {
+    window.dispatchEvent(new CustomEvent('open-upgrade-modal'));
   };
 
   if (loading) {

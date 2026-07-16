@@ -5,20 +5,53 @@ const BranchContext = createContext(null);
 
 export const BranchProvider = ({ children }) => {
   const { user } = useAuth();
-  const branches = ['All Branches', 'HEAD OFFICE(KRISHNAGIRI)', 'BANGALORE', 'THIRUPATTUR', 'DHARMAPURI(PALACODE)'];
+  const [branches, setBranches] = useState(['All Branches']);
   const [activeBranch, setActiveBranch] = useState('All Branches');
+  const [loadingBranches, setLoadingBranches] = useState(true);
 
   useEffect(() => {
-    // Only Super Admin can view All Branches. Everyone else is locked to their assigned branch.
-    if (user && !['Super Admin'].includes(user.role)) {
-      setActiveBranch(user.branch);
-    } else if (!user) {
-      setActiveBranch('All Branches');
-    }
+    const fetchBranches = async () => {
+      if (!user) {
+        setBranches(['All Branches']);
+        setActiveBranch('All Branches');
+        setLoadingBranches(false);
+        return;
+      }
+
+      try {
+        setLoadingBranches(true);
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+        const response = await fetch(`${API_URL}/api/branch-settings`, {
+          headers: {
+            ...(user.token && { 'Authorization': `Bearer ${user.token}` })
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const dynamicBranches = data.map(b => b.branchName);
+          const allB = ['All Branches', ...dynamicBranches];
+          setBranches(allB);
+          
+          // Only Super Admin & SaaS Super Admin can view All Branches. Everyone else is locked to their assigned branch.
+          if (!['Super Admin', 'SaaS Super Admin'].includes(user.role)) {
+            setActiveBranch(user.branch || dynamicBranches[0] || 'All Branches');
+          } else {
+            setActiveBranch('All Branches');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching branches:', err);
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    fetchBranches();
   }, [user]);
 
   return (
-    <BranchContext.Provider value={{ branches, activeBranch, setActiveBranch }}>
+    <BranchContext.Provider value={{ branches, activeBranch, setActiveBranch, loadingBranches }}>
       {children}
     </BranchContext.Provider>
   );
