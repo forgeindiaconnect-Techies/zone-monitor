@@ -29,7 +29,7 @@ const MainLayout = () => {
   const trialText = getSubscriptionReminder();
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 print:block print:min-h-0 print:h-auto">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       
       {/* Overlay for mobile when sidebar is open */}
@@ -40,7 +40,7 @@ const MainLayout = () => {
         />
       )}
       
-      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out print:block print:h-auto print:ml-0 ${isSidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
         
         {trialText && (
@@ -50,7 +50,7 @@ const MainLayout = () => {
           </div>
         )}
 
-        <main className={`flex-1 p-4 md:p-6 ${!trialText ? 'mt-16' : ''} overflow-y-auto min-w-0 overflow-x-hidden`}>
+        <main className={`flex-1 p-4 md:p-6 ${!trialText ? 'mt-16' : ''} overflow-y-auto min-w-0 overflow-x-hidden print:block print:p-0 print:m-0 print:overflow-visible print:h-auto`}>
           <Outlet />
         </main>
       </div>
