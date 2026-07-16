@@ -21,33 +21,34 @@ const ReportsDashboard = () => {
 
   const [activeTab, setActiveTab] = useState('visitor');
 
-  // User-Friendly CSV Exporter
+  // User-Friendly Excel Exporter
   const exportExcel = (data, filename) => {
     if (!data || !data.length) return alert("No data to export!");
     
+    let tableStr = '<table border="1"><thead><tr>';
     const headers = Object.keys(data[0]);
-    const csvRows = [];
+    headers.forEach(h => { tableStr += `<th style="background-color: #f3f4f6; font-weight: bold; padding: 8px;">${h}</th>`; });
+    tableStr += '</tr></thead><tbody>';
     
-    // Header
-    csvRows.push(headers.join(','));
+    data.forEach(row => {
+      tableStr += '<tr>';
+      headers.forEach(h => { tableStr += `<td style="padding: 6px;">${row[h]}</td>`; });
+      tableStr += '</tr>';
+    });
+    tableStr += '</tbody></table>';
     
-    // Data
-    for (const row of data) {
-      const values = headers.map(header => {
-        const escaped = ('' + (row[header] || '')).replace(/"/g, '""');
-        return `"${escaped}"`;
-      });
-      csvRows.push(values.join(','));
-    }
+    const htmlTemplate = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"></head>
+      <body>${tableStr}</body>
+      </html>
+    `;
     
-    const csvString = csvRows.join('\n');
-    // Add BOM for Excel UTF-8 support
-    const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
-    
+    const blob = new Blob([htmlTemplate], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -100,16 +101,16 @@ const ReportsDashboard = () => {
     
     return (
       <div className="overflow-x-auto print:overflow-visible">
-        <table className="w-full text-left border-collapse print:table-fixed print:w-full">
+        <table className="w-full text-left border-collapse print:w-full">
           <thead>
-            <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider">
+            <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider print:text-[10px]">
               {headers.map(h => <th key={h} className="px-6 py-4 font-medium">{h}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {data.map((row, i) => (
               <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                {headers.map(h => <td key={`${i}-${h}`} className="px-6 py-4 text-sm text-gray-700">{row[h]}</td>)}
+                {headers.map(h => <td key={`${i}-${h}`} className="px-6 py-4 text-sm text-gray-700 print:text-[11px] print:px-2 print:py-2">{row[h]}</td>)}
               </tr>
             ))}
           </tbody>
