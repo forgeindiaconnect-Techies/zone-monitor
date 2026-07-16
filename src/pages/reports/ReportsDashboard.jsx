@@ -101,18 +101,25 @@ const ReportsDashboard = () => {
     
     const headers = Object.keys(data[0]);
     
+    const getColumnClass = (header) => {
+      if (['Entry', 'Exit', 'Time Spent', 'Status'].includes(header)) return 'whitespace-nowrap';
+      if (['Notes'].includes(header)) return 'min-w-[250px]';
+      if (['Host', 'Branch', 'Purpose'].includes(header)) return 'min-w-[150px]';
+      return 'whitespace-nowrap';
+    };
+    
     return (
       <div className="overflow-x-auto print:overflow-visible">
         <table className="w-full text-left border-collapse print:w-full">
           <thead>
             <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider print:text-[10px]">
-              {headers.map(h => <th key={h} className="px-6 py-4 font-medium">{h}</th>)}
+              {headers.map(h => <th key={h} className={`px-6 py-4 font-medium align-top ${getColumnClass(h)}`}>{h}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {data.map((row, i) => (
               <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                {headers.map(h => <td key={`${i}-${h}`} className="px-6 py-4 text-sm text-gray-700 print:text-[11px] print:px-2 print:py-2">{row[h]}</td>)}
+                {headers.map(h => <td key={`${i}-${h}`} className={`px-6 py-4 text-sm text-gray-700 align-top ${getColumnClass(h)} print:text-[11px] print:px-2 print:py-2 print:whitespace-normal`}>{row[h]}</td>)}
               </tr>
             ))}
           </tbody>
