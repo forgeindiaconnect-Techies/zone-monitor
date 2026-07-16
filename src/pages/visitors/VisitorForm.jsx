@@ -27,7 +27,8 @@ const VisitorForm = () => {
     'AVINASH(MD SIR)',
     'SABARI(ADMIN)',
     'VIJI(ADMIN)',
-    'AGILA(IT)'
+    'AGILA(IT)',
+    'NEW VISITORS'
   ]);
 
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);

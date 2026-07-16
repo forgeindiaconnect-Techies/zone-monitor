@@ -32,7 +32,8 @@ const ReturningVisitor = () => {
     'AVINASH(MD SIR)',
     'SABARI(ADMIN)',
     'VIJI(ADMIN)',
-    'AGILA(IT)'
+    'AGILA(IT)',
+    'NEW VISITORS'
   ]);
 
 
