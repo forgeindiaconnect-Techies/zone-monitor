@@ -17,17 +17,7 @@ const VisitorForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [hosts, setHosts] = useState([
-    'Vaideeswari (Admin)',
-    'Adithiya (Senior HR)',
-    'Sandhiya (HR Executive)',
-    'Monikashree (HR Executive)',
-    'Priyadharshini (HR Executive)',
-    'Agila (IT Team)',
-    'Avinash (Director MD Sir)',
-    'Sandeep (Chief Executive Officer Sir)',
-    'Srisha (SBI)'
-  ]);
+  const [hosts, setHosts] = useState([]);
   
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
 

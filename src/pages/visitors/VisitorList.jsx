@@ -27,17 +27,7 @@ const VisitorList = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
 
-  const [hosts, setHosts] = useState([
-    'Vaideeswari (Admin)',
-    'Adithiya (Senior HR)',
-    'Sandhiya (HR Executive)',
-    'Monikashree (HR Executive)',
-    'Priyadharshini (HR Executive)',
-    'Agila (IT Team)',
-    'Avinash (Director MD Sir)',
-    'Sandeep (Chief Executive Officer Sir)',
-    'Srisha (SBI)'
-  ]);
+  const [hosts, setHosts] = useState([]);
 
   React.useEffect(() => {
     const fetchHosts = async () => {

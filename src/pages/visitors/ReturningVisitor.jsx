@@ -22,17 +22,7 @@ const ReturningVisitor = () => {
     visitDate: new Date().toISOString().split('T')[0],
   });
 
-  const [hosts, setHosts] = useState([
-    'Vaideeswari (Admin)',
-    'Adithiya (Senior HR)',
-    'Sandhiya (HR Executive)',
-    'Monikashree (HR Executive)',
-    'Priyadharshini (HR Executive)',
-    'Agila (IT Team)',
-    'Avinash (Director MD Sir)',
-    'Sandeep (Chief Executive Officer Sir)',
-    'Srisha (SBI)'
-  ]);
+  const [hosts, setHosts] = useState([]);
 
   useEffect(() => {
     const fetchHosts = async () => {
