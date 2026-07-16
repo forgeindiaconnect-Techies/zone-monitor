@@ -35,13 +35,8 @@ const Login = () => {
     setIsLoading(true);
     setErrorMsg('');
 
-    if (mode === 'login' || mode === 'security') {
-      const result = await login(
-        mode === 'security' ? null : email, 
-        mode === 'security' ? null : password, 
-        rememberMe, 
-        mode === 'security' ? mobileNumber : null
-      );
+    if (mode === 'login') {
+      const result = await login(email, password, rememberMe);
       if (result.success) {
         setIsLoading(false);
         setIsSuccess(true);
@@ -128,25 +123,7 @@ const Login = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {(mode === 'login' || mode === 'security') && (
-              <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-                <button
-                  type="button"
-                  className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${mode === 'login' ? 'bg-white text-[var(--color-brand-indigo)] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setMode('login')}
-                >
-                  Admin / Staff
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${mode === 'security' ? 'bg-white text-[var(--color-brand-indigo)] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setMode('security')}
-                >
-                  Security
-                </button>
-              </div>
-            )}
-            
+
             {mode === 'register' && (
               <>
                 <div>
@@ -216,69 +193,46 @@ const Login = () => {
               </>
             )}
 
-            {mode === 'security' && (
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Mobile Number</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone size={16} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-indigo-400 outline-none bg-gray-50/50"
-                    placeholder="Enter your registered mobile number"
-                    required
-                  />
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail size={16} className="text-gray-400" />
                 </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-indigo-400 outline-none bg-gray-50/50"
+                  placeholder="admin@example.com"
+                  required
+                />
               </div>
-            )}
+            </div>
 
-            {mode !== 'security' && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail size={16} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-indigo-400 outline-none bg-gray-50/50"
-                      placeholder="admin@example.com"
-                      required
-                    />
-                  </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={16} className="text-gray-400" />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock size={16} className="text-gray-400" />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-indigo-400 outline-none bg-gray-50/50"
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[var(--color-brand-indigo)] focus:outline-none"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-brand-indigo)] focus:border-indigo-400 outline-none bg-gray-50/50"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[var(--color-brand-indigo)] focus:outline-none"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
 
             {errorMsg && (
               <div className="bg-red-50 text-red-500 text-xs py-2 px-3 rounded-lg text-center border border-red-100 font-medium">
@@ -298,14 +252,7 @@ const Login = () => {
               </div>
             )}
             
-            {mode === 'security' && (
-              <div className="flex items-center justify-start text-xs mt-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="rounded text-[var(--color-brand-indigo)] focus:ring-[var(--color-brand-indigo)]" />
-                  <span className="text-gray-600">Remember me</span>
-                </label>
-              </div>
-            )}
+
 
             <button
               type="submit"
@@ -321,18 +268,18 @@ const Login = () => {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>{mode === 'login' ? 'Authenticating...' : 'Registering...'}</span>
                 </>
-              ) : isSuccess && (mode === 'login' || mode === 'security') ? (
+              ) : isSuccess && mode === 'login' ? (
                 <>
                   <CheckCircle size={18} className="text-white" />
                   <span>Login Successful</span>
                 </>
               ) : (
-                <span>{mode === 'register' ? 'Register Company & Get Code' : 'Sign In to Dashboard'}</span>
+                <span>{mode === 'login' ? 'Sign In to Dashboard' : 'Register Company & Get Code'}</span>
               )}
             </button>
 
             <div className="mt-4 text-center text-xs text-gray-500 border-t border-slate-100 pt-4">
-              {mode === 'login' || mode === 'security' ? (
+              {mode === 'login' ? (
                 <>
                   Want to use this for your company?{' '}
                   <button 

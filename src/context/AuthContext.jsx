@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = async (email, password, rememberMe = false, mobileNumber = null) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
       const url = `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/auth/login`;
       console.log('Attempting login to:', url);
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, mobileNumber })
+        body: JSON.stringify({ email, password })
       });
 
       const userData = await response.json();
