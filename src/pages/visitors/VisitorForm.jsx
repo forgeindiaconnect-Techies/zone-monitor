@@ -21,6 +21,7 @@ const VisitorForm = () => {
     'PRIYADHARSHINI(HR)',
     'SANDHIYA(HR)',
     'GANESH KUMAR(HR)',
+    'ADITHIYA(SENIOR HR)',
     'R.SANDHIYA(HR)',
     'MONIKA SHREE(HR)',
     'SANDEEP(CEO SIR)',
