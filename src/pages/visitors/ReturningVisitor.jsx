@@ -23,6 +23,9 @@ const ReturningVisitor = () => {
   });
 
   const [hosts, setHosts] = useState([
+    'PRIYADHARSHINI(HR)',
+    'SANDHIYA(HR)',
+    'GANESH KUMAR(HR)',
     'R.SANDHIYA(HR)',
     'MONIKA SHREE(HR)',
     'SANDEEP(CEO SIR)',
