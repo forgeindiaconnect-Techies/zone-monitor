@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Building, Users, UserCheck, CreditCard, Calendar, Activity, Check, X, ShieldAlert, Sparkles, Plus, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Building, Users, UserCheck, CreditCard, Calendar, Activity, Check, X, ShieldAlert, Sparkles, Plus, AlertCircle, RefreshCw, Eye, EyeOff, Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/exportUtils';
+import SendNotificationModal from '../../components/superadmin/SendNotificationModal';
 
 const DashboardCard = ({ title, value, icon: Icon, colorClass, subtitle, onClick }) => (
   <div 
@@ -59,6 +61,10 @@ const SaaSPlatformDashboard = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedUpgradeCompany, setSelectedUpgradeCompany] = useState(null);
   const [upgradeData, setUpgradeData] = useState({ plan: 'Standard', durationDays: '30' });
+
+  // Notification state
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationCompany, setNotificationCompany] = useState(null);
 
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -373,32 +379,32 @@ const SaaSPlatformDashboard = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard 
-          title="Total Companies" 
-          value={analytics ? analytics.totalCompanies : '-'} 
-          icon={Building} 
-          colorClass="bg-blue-50 text-blue-600 border border-blue-100" 
-          onClick={() => handleCardClick('Companies')}
+          title="Total Revenue" 
+          value={analytics ? `₹${(analytics.totalRevenue || 0).toLocaleString('en-IN')}` : '-'} 
+          icon={CreditCard} 
+          colorClass="bg-indigo-50 text-[var(--color-brand-indigo)] border border-indigo-100" 
+          onClick={() => handleCardClick('Payments')}
         />
         <DashboardCard 
-          title="Active Subscriptions" 
+          title="Today's Revenue" 
+          value={analytics ? `₹${(analytics.todaysRevenue || 0).toLocaleString('en-IN')}` : '-'} 
+          icon={Activity} 
+          colorClass="bg-blue-50 text-blue-600 border border-blue-100" 
+          onClick={() => handleCardClick('Payments')}
+        />
+        <DashboardCard 
+          title="Active Companies" 
           value={analytics ? analytics.activeCompanies : '-'} 
-          icon={UserCheck} 
+          icon={Building} 
           colorClass="bg-green-50 text-green-600 border border-green-100" 
           onClick={() => handleCardClick('Subscriptions')}
         />
         <DashboardCard 
-          title="Expired Subscriptions" 
+          title="Expired Companies" 
           value={analytics ? analytics.inactiveCompanies : '-'} 
           icon={ShieldAlert} 
           colorClass="bg-red-50 text-red-600 border border-red-100" 
           onClick={() => handleCardClick('Subscriptions')}
-        />
-        <DashboardCard 
-          title="Monthly Revenue" 
-          value={analytics ? `₹${analytics.monthlyRevenue.toLocaleString('en-IN')}` : '-'} 
-          icon={CreditCard} 
-          colorClass="bg-indigo-50 text-indigo-600 border border-indigo-100" 
-          onClick={() => handleCardClick('Payments')}
         />
       </div>
 
@@ -457,6 +463,12 @@ const SaaSPlatformDashboard = () => {
                   <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-100">Enterprise: {analytics.tiers.Enterprise}</span>
                 </div>
               )}
+              <button 
+                onClick={() => exportToCSV(companies.map(c => ({ Name: c.name, Code: c.code, Subscription: c.subscription, Status: c.status, ExpiresAt: c.subscriptionExpiresAt })), 'companies_export.csv')}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors ml-auto"
+              >
+                <Download size={14} /> Export CSV
+              </button>
             </div>
 
             <div className="overflow-x-auto pb-2">
@@ -488,13 +500,13 @@ const SaaSPlatformDashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-700 text-xs">
-                        {comp.branchCount || 0} / {comp.limits?.branches === -1 ? '∞' : comp.limits?.branches}
+                        {comp.branchCount || 0} / {comp.limits?.branches === -1 ? 'Unlimited' : comp.limits?.branches}
                       </td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-700 text-xs">
-                        {comp.securityCount || 0} / {comp.limits?.securityUsers === -1 ? '∞' : comp.limits?.securityUsers}
+                        {comp.securityCount || 0} / {comp.limits?.securityUsers === -1 ? 'Unlimited' : comp.limits?.securityUsers}
                       </td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-700 text-xs">
-                        {comp.visitorCount || 0} / {comp.limits?.visitors === -1 ? '∞' : comp.limits?.visitors}
+                        {comp.visitorCount || 0} / {comp.limits?.visitors === -1 ? 'Unlimited' : comp.limits?.visitors}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
@@ -510,6 +522,12 @@ const SaaSPlatformDashboard = () => {
                           className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded hover:bg-blue-100 mr-2 border border-blue-200"
                         >
                           Edit
+                        </button>
+                        <button 
+                          onClick={() => { setNotificationCompany({ ...comp }); setShowNotificationModal(true); }}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded hover:bg-indigo-100 mr-2 border border-indigo-200"
+                        >
+                          Notify
                         </button>
                         <button 
                           onClick={() => handleToggleStatus(comp._id, comp.status)}
@@ -621,9 +639,17 @@ const SaaSPlatformDashboard = () => {
 
         {activeTab === 'Payments' && (
           <>
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Payment History</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Track all subscription renewals and plan purchases</p>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Payment History</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Track all subscription renewals and plan purchases</p>
+              </div>
+              <button 
+                onClick={() => exportToCSV(payments.map(p => ({ InvoiceNo: p.invoiceNo, Company: p.companyName, Plan: p.plan, Amount: p.amount, GST: p.gst, Total: p.total, Date: p.paymentDate, Status: p.status })), 'payments_export.csv')}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors"
+              >
+                <Download size={14} /> Export CSV
+              </button>
             </div>
             
             <div className="overflow-x-auto pb-2">
@@ -745,9 +771,17 @@ const SaaSPlatformDashboard = () => {
 
         {activeTab === 'Upgrade Requests' && (
           <>
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Pending Upgrade Requests</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Approve or reject subscription upgrades requested by tenants.</p>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Pending Upgrade Requests</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Approve or reject subscription upgrades requested by tenants.</p>
+              </div>
+              <button 
+                onClick={() => exportToCSV(upgradeRequests.map(r => ({ Company: r.companyName, RequestedPlan: r.requestedPlan, Amount: r.amount, Status: r.status, RequestedOn: r.createdAt })), 'upgrade_requests_export.csv')}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors"
+              >
+                <Download size={14} /> Export CSV
+              </button>
             </div>
             
             <div className="overflow-x-auto pb-2">
@@ -755,41 +789,30 @@ const SaaSPlatformDashboard = () => {
                 <thead>
                   <tr className="bg-slate-50 text-gray-500 text-[11px] uppercase tracking-wider">
                     <th className="px-6 py-4 font-medium">Company</th>
+                    <th className="px-6 py-4 font-medium">Current Plan</th>
                     <th className="px-6 py-4 font-medium">Requested Plan</th>
-                    <th className="px-6 py-4 font-medium">Amount</th>
-                    <th className="px-6 py-4 font-medium">Duration</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Requested On</th>
-                    <th className="px-6 py-4 font-medium text-right">Actions</th>
+                    <th className="px-6 py-4 font-medium">Payment</th>
+                    <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {upgradeRequests.map((req) => (
+                  {upgradeRequests.map((req) => {
+                    const company = companies.find(c => c.code === req.companyId);
+                    return (
                     <tr key={req._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-gray-900">
                         {req.companyName}
-                        <div className="text-xs text-gray-500 font-normal">{req.companyId}</div>
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-700">
+                        {company?.subscription || 'Trial'}
                       </td>
                       <td className="px-6 py-4 font-bold text-[#1E1B6E] text-sm">
                         {req.requestedPlan}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-gray-700">
-                        ₹{req.amount}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {req.durationDays} Days
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                          req.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          req.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {req.status}
+                      <td className="px-6 py-4 text-sm">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                          Paid (₹{req.amount})
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-medium text-gray-600">
-                        {new Date(req.createdAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         {req.status === 'Pending' ? (
@@ -812,7 +835,8 @@ const SaaSPlatformDashboard = () => {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {upgradeRequests.length === 0 && !loading && (
                     <tr>
                       <td colSpan="7" className="px-6 py-12 text-center text-gray-500 font-medium bg-slate-50/50">
@@ -1168,6 +1192,14 @@ const SaaSPlatformDashboard = () => {
           </div>
         </div>
       )}
+      {/* Send Notification Modal */}
+      <SendNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        company={notificationCompany}
+        onSend={() => setNotificationCompany(null)}
+      />
+
     </div>
   );
 };

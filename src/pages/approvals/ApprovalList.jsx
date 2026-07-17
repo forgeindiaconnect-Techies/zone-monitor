@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useVisitors } from '../../context/VisitorContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Eye, Clock, Search, Filter } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, Search, Filter, MoreVertical } from 'lucide-react';
 import ApprovalModal from '../../components/approvals/ApprovalModal';
 
 const ApprovalList = () => {
@@ -15,6 +15,14 @@ const ApprovalList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState('Approve'); // 'Approve' | 'Reject'
   const [selectedVisitor, setSelectedVisitor] = useState(null);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => setOpenDropdownId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -108,8 +116,21 @@ const ApprovalList = () => {
               {approvalPipelineVisitors.map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900">{visitor.visitorName}</p>
-                    <p className="text-xs text-gray-500">{visitor.companyName}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center overflow-hidden border border-slate-200">
+                        {visitor.photoUrl ? (
+                          <img src={visitor.photoUrl} alt={visitor.visitorName} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-slate-500 font-bold text-sm uppercase">
+                            {visitor.visitorName.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{visitor.visitorName}</p>
+                        <p className="text-xs text-gray-500">{visitor.companyName}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{visitor.hostName}</td>
                   <td className="px-6 py-4">
@@ -124,31 +145,41 @@ const ApprovalList = () => {
                   </td>
                   {user?.role !== 'HR' && (
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        
-                        {['Pending', 'Hold'].includes(visitor.status) && (
-                          <>
-                            <button 
-                              onClick={() => openModal(visitor, 'Approve')}
-                              className="px-3 py-1.5 text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-md transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button 
-                              onClick={() => openModal(visitor, 'Hold')}
-                              className="px-3 py-1.5 text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200 rounded-md transition-colors"
-                            >
-                              Hold
-                            </button>
-                            <button 
-                              onClick={() => openModal(visitor, 'Reject')}
-                              className="px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
+                        <div className="relative inline-block">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.nativeEvent.stopImmediatePropagation();
+                              setOpenDropdownId(openDropdownId === visitor.id ? null : visitor.id);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors"
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+                          
+                          {openDropdownId === visitor.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 z-50">
+                              <div className="py-1">
+                                <button onClick={() => { navigate(`/approvals/${visitor.id}`); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 flex items-center gap-2">
+                                  <Eye size={14} /> View Details
+                                </button>
+                                {['Pending', 'Hold'].includes(visitor.status) && (
+                                  <>
+                                    <button onClick={() => { openModal(visitor, 'Approve'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-slate-50 border-t border-gray-100">
+                                      Approve
+                                    </button>
+                                    <button onClick={() => { openModal(visitor, 'Hold'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-slate-50">
+                                      Hold
+                                    </button>
+                                    <button onClick={() => { openModal(visitor, 'Reject'); setOpenDropdownId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50">
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                     </td>
                   )}
                 </tr>

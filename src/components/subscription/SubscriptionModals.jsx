@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldAlert, CheckCircle, CreditCard, Loader2 } from 'lucide-react';
+import { ShieldAlert, CheckCircle, CreditCard, Loader2, X } from 'lucide-react';
 
 const SubscriptionModals = () => {
   const { user, logout } = useAuth();
@@ -34,9 +34,9 @@ const SubscriptionModals = () => {
   if (mode === 'none') return null;
 
   const plans = [
-    { name: 'Basic', price: 999, features: ['500 Visitors / Month', '2 Branches', '5 Security Users'], color: 'green' },
-    { name: 'Standard', price: 2999, features: ['Unlimited Visitors', '10 Branches', '20 Security Users'], color: 'blue' },
-    { name: 'Enterprise', price: 6999, features: ['Unlimited Everything', 'Priority Support', 'Advanced Analytics'], color: 'purple' }
+    { name: 'Basic', price: 999, features: ['500 Visitors', '2 Branches', '5 Security Users', 'Reports'], color: 'green' },
+    { name: 'Standard', price: 2999, features: ['Unlimited Visitors', '10 Branches', '20 Security Users', 'Analytics'], color: 'blue' },
+    { name: 'Enterprise', price: 6999, features: ['Unlimited Everything', 'Priority Support', 'Custom Branding'], color: 'purple' }
   ];
 
   const handlePlanSelect = (plan) => {
@@ -91,37 +91,44 @@ const SubscriptionModals = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${mode === 'lock' ? 'bg-slate-900/40 backdrop-blur-xl' : 'bg-slate-900/80 backdrop-blur-sm'} animate-in fade-in duration-200`}>
       
       {/* 1. LOCK SCREEN */}
       {mode === 'lock' && (
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
-          <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
-            <ShieldAlert size={40} className="text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">⚠ Trial Expired</h2>
-          <p className="text-gray-600 mb-6">
-            Your subscription has ended. Please upgrade your plan to continue using the Visitor Management System.
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">🔒 Trial Expired</h2>
+          
+          <p className="text-gray-900 font-semibold mb-6 text-lg">
+            Your {user?.subscription || 'One Day Trial'} has ended.
           </p>
           
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-8 text-left">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-500">Current Plan</span>
+          <div className="bg-slate-50 border-y border-slate-200 py-4 mb-6 text-left space-y-3 px-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 font-medium">Company</span>
+              <span className="font-bold text-gray-900">{user?.companyName || user?.companyId}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 font-medium">Previous Plan</span>
               <span className="font-bold text-gray-900">{user?.subscription || 'One Day Trial'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-500">Expired On</span>
-              <span className="font-bold text-red-600">
-                {user?.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toLocaleDateString() : 'N/A'}
+              <span className="text-gray-500 font-medium">Expired On</span>
+              <span className="font-bold text-red-600 text-right">
+                {user?.subscriptionExpiresAt 
+                  ? new Date(user.subscriptionExpiresAt).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '\n')
+                  : 'N/A'}
               </span>
             </div>
           </div>
           
+          <p className="text-gray-500 mb-8">
+            To continue using the Visitor<br/>Management System, upgrade your plan.
+          </p>
+          
           <div className="space-y-3">
             <button
               onClick={() => setMode('choose_plan')}
-              className="w-full bg-[#1E1B6E] text-white rounded-xl py-3.5 font-bold hover:bg-indigo-900 transition-colors shadow-lg shadow-indigo-200"
+              className="w-full bg-[#1E1B6E] text-white rounded-xl py-3.5 font-bold hover:bg-indigo-900 transition-colors shadow-lg"
             >
               Upgrade Now
             </button>
@@ -190,24 +197,38 @@ const SubscriptionModals = () => {
 
       {/* 3. PAYMENT METHOD */}
       {mode === 'payment' && (
-        <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+        <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl overflow-y-auto max-h-[90vh] hide-scrollbar">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Checkout</h2>
-            <CreditCard className="text-gray-400" size={28} />
+            <button 
+              onClick={handleClose} 
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-colors"
+              type="button"
+            >
+              <X size={24} />
+            </button>
           </div>
           
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-gray-500 font-medium">Company</span>
+              <span className="font-bold text-gray-900 text-lg">{user?.companyName || user?.companyId}</span>
+            </div>
             <div className="flex justify-between items-center mb-3">
               <span className="text-gray-500 font-medium">Selected Plan</span>
               <span className="font-bold text-gray-900 text-lg">{selectedPlan?.name}</span>
             </div>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-gray-500 font-medium">Duration</span>
-              <span className="font-bold text-gray-900">30 Days</span>
+              <span className="text-gray-500 font-medium">Amount</span>
+              <span className="font-bold text-gray-900">₹{selectedPlan?.price}</span>
+            </div>
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-gray-500 font-medium">GST (18%)</span>
+              <span className="font-bold text-gray-900">₹{Math.round(selectedPlan?.price * 0.18)}</span>
             </div>
             <div className="border-t border-slate-200 pt-3 mt-1 flex justify-between items-center">
-              <span className="text-gray-700 font-semibold">Total Price</span>
-              <span className="font-black text-[#1E1B6E] text-xl">₹{selectedPlan?.price}</span>
+              <span className="text-gray-700 font-semibold">Total</span>
+              <span className="font-black text-[#1E1B6E] text-xl">₹{selectedPlan?.price + Math.round(selectedPlan?.price * 0.18)}</span>
             </div>
           </div>
           
@@ -233,7 +254,7 @@ const SubscriptionModals = () => {
                   Processing...
                 </>
               ) : (
-                `Proceed Payment (₹${selectedPlan?.price})`
+                `Pay Now (₹${selectedPlan?.price + Math.round(selectedPlan?.price * 0.18)})`
               )}
             </button>
             <button
@@ -267,19 +288,25 @@ const SubscriptionModals = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-500">Amount</span>
-              <span className="font-bold text-gray-900">₹{selectedPlan?.price}</span>
+              <span className="font-bold text-gray-900">₹{selectedPlan?.price + Math.round(selectedPlan?.price * 0.18)}</span>
             </div>
           </div>
           
           <p className="text-sm text-gray-600 mb-8 px-4 font-medium">
-            Your request has been sent to the SaaS Administrator for approval.
+            Your request has been sent for SaaS Admin approval.
           </p>
           
           <button
-            onClick={handleClose}
+            onClick={() => {
+              if (user?.isExpired) {
+                window.location.reload();
+              } else {
+                handleClose();
+              }
+            }}
             className="w-full bg-[#1E1B6E] text-white rounded-xl py-3.5 font-bold hover:bg-indigo-900 transition-colors shadow-lg"
           >
-            OK
+            Go Dashboard
           </button>
         </div>
       )}

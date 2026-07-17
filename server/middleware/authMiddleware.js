@@ -43,10 +43,12 @@ module.exports = async (req, res, next) => {
           });
         }
 
-        // Check if subscription has expired
-        if (company.subscriptionExpiresAt && new Date() > new Date(company.subscriptionExpiresAt) && userRole !== 'SaaS Super Admin' && !isUpgradeRequest) {
+        // Check if subscription has expired (Exact time)
+        if (company.subscriptionExpiresAt && new Date() >= new Date(company.subscriptionExpiresAt) && userRole !== 'SaaS Super Admin' && !isUpgradeRequest) {
+          // If expired, immediately return a specific payload so the frontend knows to freeze the dashboard.
           return res.status(403).json({ 
-            message: `Your subscription has expired on ${new Date(company.subscriptionExpiresAt).toLocaleDateString()}. Please renew to continue.` 
+            subscriptionExpired: true,
+            message: `Your subscription expired on ${new Date(company.subscriptionExpiresAt).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. Please renew to continue.` 
           });
         }
 

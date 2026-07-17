@@ -28,8 +28,23 @@ export const VisitorProvider = ({ children }) => {
       .catch(console.error);
   }, []);
 
+  // Clear visitors explicitly if company changes (prevent cross-tenant leakage)
+  const currentCompanyRef = React.useRef(currentUser?.companyId);
+
   // Fetch visitors from backend
   const fetchVisitors = async () => {
+    if (!currentUser) {
+      setVisitors([]);
+      allVisitorsRef.current = [];
+      setLoading(false);
+      return;
+    }
+
+    if (currentCompanyRef.current !== currentUser.companyId) {
+      setVisitors([]);
+      allVisitorsRef.current = [];
+      currentCompanyRef.current = currentUser.companyId;
+    }
     try {
       let queryBranch = currentUser?.branch;
       if (currentUser?.role === 'Super Admin') {
@@ -101,6 +116,13 @@ export const VisitorProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    if (!currentUser) {
+      setVisitors([]);
+      allVisitorsRef.current = [];
+      setLoading(false);
+      return;
+    }
+
     fetchVisitors();
     
     // Auto-refresh data every 5 seconds so Admin dashboard updates in real-time

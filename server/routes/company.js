@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Company = require('../models/Company');
 const authMiddleware = require('../middleware/authMiddleware');
+const { sendEmail, EmailTemplates } = require('../utils/emailService');
 
 router.use(authMiddleware);
 
@@ -78,6 +79,13 @@ router.post('/request-upgrade', async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       io.emit('new_notification', newNotif);
+    }
+
+    // Find the company's super admin email to send the confirmation to
+    const User = require('../models/User');
+    const companyAdmin = await User.findOne({ companyId: company.code, role: 'Super Admin' });
+    if (companyAdmin && companyAdmin.email) {
+      await sendEmail(companyAdmin.email, EmailTemplates.paymentReceived(company.name, requestedPlan, amount).subject, EmailTemplates.paymentReceived(company.name, requestedPlan, amount).body);
     }
 
     res.json({ success: true, message: 'Upgrade request sent successfully to the SaaS Administrator.' });
@@ -168,6 +176,17 @@ router.patch('/branding', async (req, res) => {
     });
 
     res.json(company.branding);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/company/subscription-history - Fetch payment history for the company
+router.get('/subscription-history', async (req, res) => {
+  try {
+    const Payment = require('../models/Payment');
+    const payments = await Payment.find({ companyId: req.companyId }).sort({ paymentDate: -1 });
+    res.json(payments);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

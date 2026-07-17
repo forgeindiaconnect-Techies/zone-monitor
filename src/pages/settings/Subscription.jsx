@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { CreditCard, Calendar, ShieldAlert, CheckCircle } from 'lucide-react';
+import { CreditCard, Calendar, ShieldAlert, CheckCircle, FileText, Download } from 'lucide-react';
+import InvoiceModal from '../../components/subscription/InvoiceModal';
 
 const Subscription = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [companyDetails, setCompanyDetails] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
@@ -24,6 +27,18 @@ const Subscription = () => {
       if (response.ok) {
         const data = await response.json();
         setCompanyDetails(data);
+        
+        // Fetch history
+        const histRes = await fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/company/subscription-history`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-Company-Id': user?.companyId
+          }
+        });
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          setHistory(histData);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch company details:', err);
@@ -164,6 +179,67 @@ const Subscription = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscription History Table */}
+      <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-slate-50 px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800">Subscription History</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Plan</th>
+                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Invoice</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {history.map((record) => (
+                <tr key={record._id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    {new Date(record.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-[#1E1B6E]">
+                    {record.plan}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                    ₹{record.total?.toLocaleString('en-IN') || record.amount?.toLocaleString('en-IN')}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                      record.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {record.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => setSelectedInvoice(record)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1E1B6E] hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-100"
+                    >
+                      <FileText size={14} /> View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {history.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500 text-sm">
+                    No billing history found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {selectedInvoice && (
+        <InvoiceModal invoice={selectedInvoice} onClose={() => setSelectedInvoice(null)} />
+      )}
     </div>
   );
 };

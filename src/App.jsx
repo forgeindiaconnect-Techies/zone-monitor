@@ -8,6 +8,8 @@ import { NotificationProvider } from './context/NotificationContext';
 import { BranchProvider } from './context/BranchContext';
 import { AttendanceProvider } from './context/AttendanceContext';
 import ToastContainer from './components/notifications/ToastContainer';
+import SubscriptionReminders from './components/subscription/SubscriptionReminders';
+import SubscriptionSuccessModal from './components/subscription/SubscriptionSuccessModal';
 import { ShieldAlert } from 'lucide-react';
 
 // Layouts
@@ -124,6 +126,8 @@ function App() {
                   <BlacklistProvider>
                     <AppRoutes />
                     <ToastContainer />
+                    <SubscriptionReminders />
+                    <SubscriptionSuccessModal />
                   </BlacklistProvider>
                 </ZoneProvider>
               </VisitorProvider>

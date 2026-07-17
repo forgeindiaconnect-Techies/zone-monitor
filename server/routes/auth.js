@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const logAction = require('../utils/auditLogger');
+const { sendEmail, EmailTemplates } = require('../utils/emailService');
 
 // POST login
 router.post('/login', async (req, res) => {
@@ -64,7 +65,7 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({ message: `Your company account is currently ${company.status}. Please contact support.` });
       }
       
-      if (company.subscriptionExpiresAt && new Date() > new Date(company.subscriptionExpiresAt)) {
+      if (company.subscriptionExpiresAt && new Date() >= new Date(company.subscriptionExpiresAt)) {
         isExpired = true;
         
         // Auto-expire in database if not already
@@ -74,10 +75,7 @@ router.post('/login', async (req, res) => {
         }
       }
       
-      // Block login if expired
-      if (isExpired && user.role !== 'SaaS Super Admin') {
-        return res.status(403).json({ message: 'Your company subscription has expired. Please contact your SaaS administrator.' });
-      }
+      // Do not block login if expired; let the frontend handle the freeze screen and upgrade flow.
       
       subscription = company.subscription;
       subscriptionExpiresAt = company.subscriptionExpiresAt;
@@ -234,6 +232,9 @@ router.post('/register-company', async (req, res) => {
       userName: adminName,
       role: 'SaaS Super Admin'
     });
+
+    // Send mock email
+    await sendEmail(email.toLowerCase(), EmailTemplates.welcome(companyName, adminName).subject, EmailTemplates.welcome(companyName, adminName).body);
 
     const sanitizedUser = user.toJSON();
     delete sanitizedUser.password;

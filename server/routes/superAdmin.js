@@ -112,11 +112,17 @@ router.patch('/companies/:id', async (req, res) => {
       }
       
       const Payment = require('../models/Payment');
+      const invoiceNo = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const amount = planPrice * durationMultiplier;
+      const gst = Math.round(amount * 0.18);
       await Payment.create({
+        invoiceNo,
         companyId: comp.code,
         companyName: comp.name,
         plan: comp.subscription,
-        amount: planPrice * durationMultiplier,
+        amount: amount,
+        gst: gst,
+        total: amount + gst,
         expiryDate: comp.subscriptionExpiresAt,
         durationDays: parseInt(durationDays || 30, 10),
         processedBy: req.userRole || 'SaaS Super Admin',
@@ -234,6 +240,40 @@ router.delete('/companies/:id', async (req, res) => {
   }
 });
 
+// POST Send custom notification to a tenant
+router.post('/notify-company', async (req, res) => {
+  try {
+    const { companyId, title, message, type } = req.body;
+    
+    if (!companyId || !title || !message) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const Notification = require('../models/Notification');
+    const newNotif = await Notification.create({
+      companyId: companyId,
+      type: type || 'System',
+      title: title,
+      message: message,
+      createdBy: req.userRole || 'SaaS Super Admin'
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_notification', newNotif);
+    }
+    
+    await logAction(req, `Sent ${type || 'System'} notification to company ${companyId}`, 'Tenant Management', {
+      companyId: 'SYSTEM',
+      companyName: 'System Administration'
+    });
+
+    res.status(201).json({ message: 'Notification sent successfully', notification: newNotif });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET platform analytics
 router.get('/analytics', async (req, res) => {
   try {
@@ -250,20 +290,36 @@ router.get('/analytics', async (req, res) => {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
+    // Total Revenue (all time)
+    const allPayments = await Payment.find({ status: 'Paid' });
+    const totalRevenue = allPayments.reduce((sum, p) => sum + (p.total || p.amount || 0), 0);
+    
+    // Today's Revenue
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    
+    const paymentsToday = await Payment.find({
+      paymentDate: { $gte: startOfToday, $lte: endOfToday },
+      status: 'Paid'
+    });
+    const todaysRevenue = paymentsToday.reduce((sum, p) => sum + (p.total || p.amount || 0), 0);
+
     const paymentsThisMonth = await Payment.find({
       paymentDate: { $gte: startOfMonth },
       status: 'Paid'
     });
-    const monthlyRevenue = paymentsThisMonth.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const annualRevenue = monthlyRevenue * 12; // projection
+    const monthlyRevenue = paymentsThisMonth.reduce((sum, p) => sum + (p.total || p.amount || 0), 0);
 
     res.json({
       totalCompanies,
       activeCompanies,
       inactiveCompanies,
       totalVisitors,
+      totalRevenue,
+      todaysRevenue,
       monthlyRevenue,
-      annualRevenue,
       tiers: {
         OneDayTrial: await Company.countDocuments({ subscription: 'One Day Trial' }),
         Basic: await Company.countDocuments({ subscription: 'Basic' }),
@@ -346,11 +402,17 @@ router.patch('/upgrade-requests/:id', async (req, res) => {
 
         // Create Payment record
         const Payment = require('../models/Payment');
+        const invoiceNo = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const amount = upgradeReq.amount;
+        const gst = Math.round(amount * 0.18);
         await Payment.create({
+          invoiceNo,
           companyId: company.code,
           companyName: company.name,
           plan: company.subscription,
-          amount: upgradeReq.amount,
+          amount: amount,
+          gst: gst,
+          total: amount + gst,
           expiryDate: company.subscriptionExpiresAt,
           durationDays: upgradeReq.durationDays,
           processedBy: req.userRole || 'SaaS Super Admin',

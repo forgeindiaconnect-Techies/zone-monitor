@@ -21,10 +21,12 @@ window.fetch = async function (url, options = {}) {
         const user = JSON.parse(savedUser);
         const headers = options.headers ? { ...options.headers } : {};
         
-        if (!headers['X-Company-Id']) headers['X-Company-Id'] = user.companyId || '';
-        if (!headers['X-User-Id']) headers['X-User-Id'] = user.id || '';
-        if (!headers['X-User-Role']) headers['X-User-Role'] = user.role || '';
-        if (!headers['Authorization'] && user.token) headers['Authorization'] = `Bearer ${user.token}`;
+        const existingKeys = Object.keys(headers).map(k => k.toLowerCase());
+        
+        if (!existingKeys.includes('x-company-id')) headers['X-Company-Id'] = user.companyId || '';
+        if (!existingKeys.includes('x-user-id')) headers['X-User-Id'] = user.id || '';
+        if (!existingKeys.includes('x-user-role')) headers['X-User-Role'] = user.role || '';
+        if (!existingKeys.includes('authorization') && user.token) headers['Authorization'] = `Bearer ${user.token}`;
         
         options.headers = headers;
       } catch (e) {

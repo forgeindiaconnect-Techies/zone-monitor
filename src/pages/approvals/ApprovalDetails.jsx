@@ -91,8 +91,12 @@ const ApprovalDetails = () => {
         {/* Header Section */}
         <div className="p-6 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center space-x-5">
-            <div className="w-20 h-20 rounded-full bg-indigo-50 border-4 border-white shadow-md flex items-center justify-center text-[var(--color-brand-indigo)] text-2xl font-bold">
-              {visitor.visitorName.charAt(0)}
+            <div className="w-20 h-20 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden text-slate-500 text-2xl font-bold">
+              {visitor.photoUrl ? (
+                <img src={visitor.photoUrl} alt={visitor.visitorName} className="w-full h-full object-cover" />
+              ) : (
+                visitor.visitorName.charAt(0)
+              )}
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">{visitor.visitorName}</h2>

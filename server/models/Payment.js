@@ -14,7 +14,20 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  invoiceNo: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   amount: {
+    type: Number,
+    required: true
+  },
+  gst: {
+    type: Number,
+    default: 0
+  },
+  total: {
     type: Number,
     required: true
   },
