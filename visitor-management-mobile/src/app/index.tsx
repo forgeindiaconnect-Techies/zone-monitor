@@ -22,7 +22,7 @@ export default function HomeScreen() {
   // ==========================================
   // 👇 PASTE YOUR LIVE VERCEL/RENDER URL HERE 👇
   // ==========================================
-  const TARGET_URL = 'https://zone-monitor.vercel.app'; 
+  const TARGET_URL = 'http://192.168.1.27:5173'; // Changed from Vercel to local dev server for testing 
   
   return (
     <SafeAreaView style={styles.container}>
