@@ -28,17 +28,16 @@ const VisitorList = () => {
   const [dateFilter, setDateFilter] = useState('');
 
   const defaultHosts = [
-    'PRIYADHARSHINI(HR)',
-    'SANDHIYA(HR)',
-    'GANESH KUMAR(HR)',
-    'ADITHIYA(SENIOR HR)',
-    'R.SANDHIYA(HR)',
-    'MONIKA SHREE(HR)',
-    'SANDEEP(CEO SIR)',
-    'AVINASH(MD SIR)',
-    'SABARI(ADMIN)',
-    'VIJI(ADMIN)',
-    'AGILA(IT)'
+    'Monikashree (HR)',
+    'Sandhiya (HR)',
+    'Ganesh Kumar (HR)',
+    'Priyadharshini (HR)',
+    'Adithiya (Senior HR)',
+    'Sandeep (Chief Executive Officer Sir)',
+    'Avinash (MD Sir)',
+    'Sabari (Admin)',
+    'Viji (Admin)',
+    'Akila (IT)'
   ];
 
   const [hosts, setHosts] = useState([...defaultHosts, 'NEW VISITORS']);

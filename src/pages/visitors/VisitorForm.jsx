@@ -18,17 +18,16 @@ const VisitorForm = () => {
   const navigate = useNavigate();
   
   const defaultHosts = [
-    'Priyadharshini (HR)',
+    'Monikashree (HR)',
     'Sandhiya (HR)',
     'Ganesh Kumar (HR)',
+    'Priyadharshini (HR)',
     'Adithiya (Senior HR)',
-    'R. Sandhiya (HR)',
-    'Monika Shree (HR)',
-    'Sandeep (CEO Sir)',
+    'Sandeep (Chief Executive Officer Sir)',
     'Avinash (MD Sir)',
     'Sabari (Admin)',
     'Viji (Admin)',
-    'Agila (IT)'
+    'Akila (IT)'
   ];
 
   const [hosts, setHosts] = useState([...defaultHosts, 'New Visitors']);
