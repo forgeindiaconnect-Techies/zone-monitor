@@ -94,6 +94,53 @@ app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
+// Error handler to automatically kill port if in use
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`⚠️  Port ${PORT} is already in use. Attempting to free it...`);
+    const { exec } = require('child_process');
+    
+    const isWin = process.platform === 'win32';
+    const command = isWin ? `netstat -ano | findstr :${PORT}` : `lsof -i :${PORT} -t`;
+    
+    exec(command, (err, stdout) => {
+      if (!err && stdout) {
+        let pid;
+        if (isWin) {
+          // Parse netstat output to get PID
+          const lines = stdout.trim().split('\n');
+          const lastLine = lines[0].trim();
+          const parts = lastLine.split(/\s+/);
+          pid = parts[parts.length - 1];
+        } else {
+          pid = stdout.trim();
+        }
+        
+        if (pid) {
+          console.log(`🔫 Killing process ${pid} occupying port ${PORT}...`);
+          try {
+            process.kill(pid);
+            console.log('✅ Port freed. Restarting server...');
+            setTimeout(() => {
+              server.listen(PORT, () => {
+                console.log(`🚀 Server running on port ${PORT}`);
+              });
+            }, 1000);
+            return;
+          } catch(killErr) {
+             console.error(`❌ Failed to kill process ${pid}:`, killErr.message);
+          }
+        }
+      }
+      console.error(`❌ Port ${PORT} is in use and could not be freed automatically. Please check and kill the process manually.`);
+      process.exit(1);
+    });
+  } else {
+    console.error('❌ Server error:', e);
+    process.exit(1);
+  }
+});
+
 // Start server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
