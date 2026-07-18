@@ -27,20 +27,34 @@ const VisitorList = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
 
-  const [hosts, setHosts] = useState([
-    'PRIYADHARSHINI(HR)',
-    'SANDHIYA(HR)',
-    'GANESH KUMAR(HR)',
-    'ADITHIYA(SENIOR HR)',
-    'R.SANDHIYA(HR)',
-    'MONIKA SHREE(HR)',
-    'SANDEEP(CEO SIR)',
-    'AVINASH(MD SIR)',
-    'SABARI(ADMIN)',
-    'VIJI(ADMIN)',
-    'AGILA(IT)',
-    'NEW VISITORS'
-  ]);
+  const [hosts, setHosts] = useState(['NEW VISITORS']);
+
+  React.useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? `http://${networkIp || 'localhost'}:5000` : 'https://zone-monitor.onrender.com');
+        let url = `${API_URL}/api/users`;
+        if (user?.role !== 'Super Admin' && activeBranch && activeBranch !== 'All Branches') {
+          url += `?branch=${activeBranch}`;
+        }
+        const res = await fetch(url, {
+          headers: {
+            'x-company-id': user?.companyId || 'FIC001',
+            'Authorization': user?.token ? `Bearer ${user.token}` : ''
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const hostUsers = data.filter(u => u.role !== 'Security' && u.status === 'Active');
+          const dynamicHosts = hostUsers.map(u => `${u.name.toUpperCase()}(${u.role.toUpperCase()})`);
+          setHosts([...dynamicHosts, 'NEW VISITORS']);
+        }
+      } catch (err) {
+        console.error('Error fetching hosts:', err);
+      }
+    };
+    if (user) fetchHosts();
+  }, [user, activeBranch, networkIp]);
 
 
   // Handle URL params for filtering
