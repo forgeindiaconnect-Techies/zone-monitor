@@ -61,7 +61,16 @@ const ReturningVisitor = () => {
           const hostUsers = data.filter(u => u.role !== 'Security' && u.status === 'Active');
           const dynamicHosts = hostUsers.map(u => `${u.name} (${u.role})`);
           
-          const mergedHosts = [...new Set([...defaultHosts, ...dynamicHosts])];
+          const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const mergedHosts = [...defaultHosts];
+          
+          dynamicHosts.forEach(dynamicHost => {
+            const isDuplicate = defaultHosts.some(defaultHost => normalize(defaultHost) === normalize(dynamicHost));
+            if (!isDuplicate) {
+              mergedHosts.push(dynamicHost);
+            }
+          });
+          
           setHosts([...mergedHosts, 'New Visitors']);
         }
       } catch (err) {
