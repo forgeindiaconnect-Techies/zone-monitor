@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
   try {
     let query = { companyId: req.companyId };
     if (req.query.branch) {
-      query.branch = req.query.branch;
+      query.branch = { $in: [req.query.branch, 'All Branches'] };
     }
     const users = await User.find(query).sort({ createdAt: -1 });
     // Remove passwords before sending to frontend
