@@ -17,7 +17,21 @@ const VisitorForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [hosts, setHosts] = useState(['New Visitors']);
+  const defaultHosts = [
+    'Priyadharshini (HR)',
+    'Sandhiya (HR)',
+    'Ganesh Kumar (HR)',
+    'Adithiya (Senior HR)',
+    'R. Sandhiya (HR)',
+    'Monika Shree (HR)',
+    'Sandeep (CEO Sir)',
+    'Avinash (MD Sir)',
+    'Sabari (Admin)',
+    'Viji (Admin)',
+    'Agila (IT)'
+  ];
+
+  const [hosts, setHosts] = useState([...defaultHosts, 'New Visitors']);
 
   React.useEffect(() => {
     const fetchHosts = async () => {
@@ -37,7 +51,10 @@ const VisitorForm = () => {
           const data = await res.json();
           const hostUsers = data.filter(u => u.role !== 'Security' && u.status === 'Active');
           const dynamicHosts = hostUsers.map(u => `${u.name} (${u.role})`);
-          setHosts([...dynamicHosts, 'New Visitors']);
+          
+          // Merge default hosts and dynamic hosts, removing duplicates
+          const mergedHosts = [...new Set([...defaultHosts, ...dynamicHosts])];
+          setHosts([...mergedHosts, 'New Visitors']);
         }
       } catch (err) {
         console.error('Error fetching hosts:', err);

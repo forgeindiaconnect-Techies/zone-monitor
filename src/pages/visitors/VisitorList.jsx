@@ -27,7 +27,21 @@ const VisitorList = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
 
-  const [hosts, setHosts] = useState(['NEW VISITORS']);
+  const defaultHosts = [
+    'PRIYADHARSHINI(HR)',
+    'SANDHIYA(HR)',
+    'GANESH KUMAR(HR)',
+    'ADITHIYA(SENIOR HR)',
+    'R.SANDHIYA(HR)',
+    'MONIKA SHREE(HR)',
+    'SANDEEP(CEO SIR)',
+    'AVINASH(MD SIR)',
+    'SABARI(ADMIN)',
+    'VIJI(ADMIN)',
+    'AGILA(IT)'
+  ];
+
+  const [hosts, setHosts] = useState([...defaultHosts, 'NEW VISITORS']);
 
   React.useEffect(() => {
     const fetchHosts = async () => {
@@ -47,7 +61,9 @@ const VisitorList = () => {
           const data = await res.json();
           const hostUsers = data.filter(u => u.role !== 'Security' && u.status === 'Active');
           const dynamicHosts = hostUsers.map(u => `${u.name.toUpperCase()}(${u.role.toUpperCase()})`);
-          setHosts([...dynamicHosts, 'NEW VISITORS']);
+          
+          const mergedHosts = [...new Set([...defaultHosts, ...dynamicHosts])];
+          setHosts([...mergedHosts, 'NEW VISITORS']);
         }
       } catch (err) {
         console.error('Error fetching hosts:', err);
