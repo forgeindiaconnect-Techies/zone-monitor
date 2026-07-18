@@ -27,7 +27,8 @@ const VisitorForm = () => {
     'Avinash (MD Sir)',
     'Sabari (Admin)',
     'Viji (Admin)',
-    'Akila (IT)'
+    'Akila (IT)',
+    'Gowtham (HR)'
   ];
 
   const [hosts, setHosts] = useState([...defaultHosts, 'New Visitors']);
@@ -48,7 +49,7 @@ const VisitorForm = () => {
         });
         if (res.ok) {
           const data = await res.json();
-          const hostUsers = data.filter(u => u.role !== 'Security' && u.status === 'Active');
+          const hostUsers = data.filter(u => u.role !== 'Security' && u.role !== 'Super Admin' && !u.name.toLowerCase().includes('test') && u.status === 'Active');
           const dynamicHosts = hostUsers.map(u => `${u.name} (${u.role})`);
           
           // Merge default hosts and dynamic hosts, removing duplicates (case/space insensitive)
