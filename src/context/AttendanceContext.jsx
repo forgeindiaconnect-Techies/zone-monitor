@@ -13,6 +13,14 @@ export const AttendanceProvider = ({ children }) => {
   
   const today = new Date().toISOString().split('T')[0];
 
+  const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-user-id': user?.id || '',
+    'x-company-id': user?.companyId || 'FIC001',
+    'x-user-role': user?.role || '',
+    'x-branch-id': user?.branch || ''
+  });
+
   const fetchAttendance = async () => {
     if (!user) return;
     
@@ -31,7 +39,10 @@ export const AttendanceProvider = ({ children }) => {
         queryUrl = queryBranch ? `${API_URL}?branch=${encodeURIComponent(queryBranch)}` : API_URL;
       }
       
-      const response = await fetch(queryUrl, { cache: 'no-store' });
+      const response = await fetch(queryUrl, { 
+        cache: 'no-store',
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const data = await response.json();
         
@@ -85,12 +96,15 @@ export const AttendanceProvider = ({ children }) => {
     try {
       const response = await fetch(`${API_URL}/checkin`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
       if (response.ok) {
         const saved = await response.json();
         setAttendance(saved);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.error('Check-in failed:', err.message);
       }
     } catch (err) {
       console.error(err);
@@ -104,11 +118,11 @@ export const AttendanceProvider = ({ children }) => {
     const workingHours = calculateHours(attendance.checkInTime, now);
 
     try {
-      // NOTE: Using attendanceId because that's what the route expects now
-      const idToUse = attendance.attendanceId || attendance._id;
+      // Always use MongoDB _id for the checkout route lookup
+      const idToUse = attendance._id;
       const response = await fetch(`${API_URL}/checkout/${idToUse}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ 
           checkOutTime: now, 
           workingHours, 
@@ -119,6 +133,9 @@ export const AttendanceProvider = ({ children }) => {
       if (response.ok) {
         const updated = await response.json();
         setAttendance(updated);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.error('Check-out failed:', err.message);
       }
     } catch (err) {
       console.error(err);

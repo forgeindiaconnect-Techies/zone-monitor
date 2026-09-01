@@ -994,7 +994,7 @@ const SecurityDashboard = () => {
                   </div>
                   
                   <div className="mt-4">
-                    {attendance.status === 'Completed' ? (
+                    {(attendance.attendanceStatus === 'Completed' || attendance.attendanceStatus === 'Auto Checked-Out') ? (
                       <div className="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-center border border-gray-200">
                         Attendance Completed
                       </div>
