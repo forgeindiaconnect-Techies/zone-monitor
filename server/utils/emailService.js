@@ -37,33 +37,64 @@ if (process.env.BREVO_API_KEY) {
 }
 
 const sendEmail = async (to, subject, htmlBody) => {
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || SMTP_USER || 'forgeindiaconnectfic@gmail.com';
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'forgeindiaconnectfic@gmail.com';
   const senderName = process.env.BREVO_SENDER_NAME || 'ForgeIndiaConnect';
+  const brevoApiKey = process.env.BREVO_API_KEY;
 
-  // 1. Primary Attempt: High-speed Brevo REST API (< 300ms execution)
-  if (brevoClient || process.env.BREVO_API_KEY) {
+  // 1. Primary Attempt: Direct Brevo REST API (Fast & Reliable, no SDK dependency issues)
+  if (brevoApiKey) {
     try {
-      const client = brevoClient || new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
-      await client.transactionalEmails.sendTransacEmail({
-        subject: subject,
-        htmlContent: htmlBody,
-        sender: {
-          name: senderName,
-          email: senderEmail,
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'api-key': brevoApiKey
         },
-        to: [{ email: to }],
-        replyTo: { email: senderEmail, name: senderName }
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: htmlBody,
+          replyTo: { name: senderName, email: senderEmail }
+        })
       });
-      console.log(`⚡ Instant Brevo API email dispatched to ${to} (${subject})`);
-      return true;
+
+      const resData = await response.json().catch(() => ({}));
+      if (response.ok) {
+        console.log(`⚡ Instant Brevo API email dispatched to ${to} (${subject}). MessageId: ${resData.messageId || 'OK'}`);
+        return true;
+      } else {
+        console.warn(`⚠️ Brevo API response notice (${response.status}):`, resData);
+      }
     } catch (brevoErr) {
       console.warn(`⚠️ Brevo API delivery notice (${brevoErr.message}). Falling back to Gmail SMTP...`);
     }
   }
 
-  // 2. Fallback Attempt: Gmail SMTP (with connection pool & fast timeouts)
+  // 2. Fallback Attempt: Nodemailer SMTP with dynamic env variables
   try {
-    const info = await transporter.sendMail({
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
+    const smtpUser = (process.env.SMTP_USER || 'forgeindiaconnectfic@gmail.com').trim();
+    const rawPass = process.env.SMTP_PASS || 'nuyy dzpp ysfp tcdl';
+    const smtpPass = String(rawPass).replace(/\s+/g, '').trim();
+
+    const dynamicTransporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 8000
+    });
+
+    const info = await dynamicTransporter.sendMail({
       from: `"${senderName}" <${senderEmail}>`,
       to: to,
       replyTo: `"${senderName}" <${senderEmail}>`,

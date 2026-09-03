@@ -40,7 +40,7 @@ router.post('/create', async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 48 * 3600 * 1000); // 48 Hours
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://fic-visitor-1.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://zone-monitor.vercel.app';
     const registrationLink = `${frontendUrl}/pre-register?token=${token}`;
     const expiryDateStr = expiresAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -190,7 +190,7 @@ router.post('/register', async (req, res) => {
     const visitId = `VISIT${vNum.toString().padStart(4, '0')}`;
     const bookingId = `BK${bNum.toString().padStart(6, '0')}`;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://fic-visitor-1.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://zone-monitor.vercel.app';
     const passUrl = `${frontendUrl}/pass/${visitId}`;
     const qrPayload = {
       bookingId,
@@ -211,8 +211,11 @@ router.post('/register', async (req, res) => {
       branch: registration.branch,
       visitorCount: registration.visitorCount,
       notes: registration.notes || address || '',
-      hostName: 'Security / Reception',
+      hostName: registration.hostEmployee || 'Security / Reception',
+      hostEmployee: registration.hostEmployee || 'Security / Reception',
       registrationType: 'Pre-Booking',
+      visitType: 'PRE_BOOKING',
+      isPreBooking: true,
       status: 'Approved',
       bookingId,
       visitId,
@@ -260,8 +263,14 @@ router.get('/list', async (req, res) => {
       query.companyId = req.companyId;
     }
 
-    if (status && status !== 'All') {
-      query.status = status;
+    if (req.query.branch && req.query.branch !== 'All Branches') {
+      const bUpper = req.query.branch.toUpperCase();
+      const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let bRegex = escapeRegExp(req.query.branch);
+      if (bUpper.includes('KRISHNAGIRI')) {
+        bRegex = `${bRegex}|Krishnagiri|Head Office`;
+      }
+      query.branch = { $regex: new RegExp(bRegex, 'i') };
     }
 
     if (search) {

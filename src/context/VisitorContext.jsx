@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useBranch } from './BranchContext';
 import { useNotification } from './NotificationContext';
 import { useAuth } from './AuthContext';
+import { isBranchMatch } from '../utils/branchUtils';
 
 const VisitorContext = createContext(null);
 const rawBase = (import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')).replace(/\/api\/?$/, '');
@@ -81,14 +82,20 @@ export const VisitorProvider = ({ children }) => {
         ? `${PREBOOKINGS_API_URL}?branch=${encodeURIComponent(queryBranch)}` 
         : PREBOOKINGS_API_URL;
 
-      console.log('Fetching visitors and pre-bookings from API...');
-      const [visitorsRes, preBookingsRes] = await Promise.all([
+      const invitationsFetchUrl = queryBranch && queryBranch !== 'All Branches' 
+        ? `${rawBase}/api/invitations/list?branch=${encodeURIComponent(queryBranch)}` 
+        : `${rawBase}/api/invitations/list`;
+
+      console.log('Fetching visitors, pre-bookings, and invitations from API...');
+      const [visitorsRes, preBookingsRes, invitationsRes] = await Promise.all([
         fetch(fetchUrl, { cache: 'no-store', headers }).catch(() => ({ ok: false })),
-        fetch(prebookingFetchUrl, { cache: 'no-store', headers }).catch(() => ({ ok: false }))
+        fetch(prebookingFetchUrl, { cache: 'no-store', headers }).catch(() => ({ ok: false })),
+        fetch(invitationsFetchUrl, { cache: 'no-store', headers }).catch(() => ({ ok: false }))
       ]);
 
       let visitorsData = [];
       let preBookingsData = [];
+      let invitationsData = [];
 
       if (visitorsRes.ok) {
         const vJson = await visitorsRes.json();
@@ -110,9 +117,20 @@ export const VisitorProvider = ({ children }) => {
               ? pbJson.data
               : [];
       }
+      if (invitationsRes && invitationsRes.ok) {
+        const invJson = await invitationsRes.json();
+        invitationsData = Array.isArray(invJson)
+          ? invJson
+          : Array.isArray(invJson?.invitations)
+            ? invJson.invitations
+            : Array.isArray(invJson?.data)
+              ? invJson.data
+              : [];
+      }
 
       const safePBData = Array.isArray(preBookingsData) ? preBookingsData : [];
       const safeVData = Array.isArray(visitorsData) ? visitorsData : [];
+      const safeInvData = Array.isArray(invitationsData) ? invitationsData : [];
 
       // Normalize pre-bookings to match visitor schema for the Dashboard UI
       const normalizedPreBookings = safePBData.map(pb => {
@@ -128,6 +146,8 @@ export const VisitorProvider = ({ children }) => {
           ...pb,
           id: pb._id || pb.id,
           isPreBooking: true,
+          visitType: 'PRE_BOOKING',
+          registrationType: 'Pre-Booking',
           visitorName: pb.fullName || pb.visitorName || 'Visitor',
           purpose: pb.visitPurpose || pb.purpose || 'Visit',
           branch: pb.branchLocation || pb.branch || 'Head Office',
@@ -136,25 +156,43 @@ export const VisitorProvider = ({ children }) => {
         };
       }).filter(Boolean);
 
+      // Normalize active/pending pre-booking registration invitations
+      const normalizedInvitations = safeInvData
+        .filter(inv => inv && !inv.used && !inv.cancelled)
+        .map(inv => ({
+          ...inv,
+          id: inv._id || inv.id,
+          _id: inv._id || inv.id,
+          isPreBooking: true,
+          visitType: 'PRE_BOOKING',
+          registrationType: 'Pre-Booking',
+          visitorName: inv.visitorName || 'Valued Visitor',
+          fullName: inv.visitorName || 'Valued Visitor',
+          purpose: inv.purpose || 'Business Visit',
+          visitPurpose: inv.purpose || 'Business Visit',
+          branch: inv.branch || 'Head Office',
+          branchLocation: inv.branch || 'Head Office',
+          hostName: inv.hostEmployee || 'Pre-Booking Registration',
+          hostEmployee: inv.hostEmployee || 'Pre-Booking Registration',
+          visitDate: inv.visitDate || (inv.createdAt ? new Date(inv.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          status: inv.status === 'Invitation Sent' || inv.status === 'Pending Invitation' || inv.status === 'Registration Pending' ? 'Pending' : (inv.status || 'Pending'),
+          isInvitation: true
+        }));
+
       // Sort newest first before deduplication
-      const allCombined = [...safeVData, ...normalizedPreBookings].sort(
+      const allCombined = [...safeVData, ...normalizedPreBookings, ...normalizedInvitations].sort(
         (a, b) => new Date(b.visitDate || b.createdAt || b.date || 0) - new Date(a.visitDate || a.createdAt || a.date || 0)
       );
 
       // Deduplicate strictly by unique Document ID
       const seenIds = new Set();
       const mergedData = [];
-      const testNamesRegex = /^(test|test 1|test 2|test 3|lokeee|testing)$/i;
 
       for (const item of allCombined) {
         const idKey = String(item._id || item.id || '');
         if (idKey && seenIds.has(idKey)) continue;
 
         const name = String(item.visitorName || item.fullName || '').trim();
-        // Exclude test records from global metrics
-        if (testNamesRegex.test(name) || name.toLowerCase().startsWith('test ') || name.toLowerCase().startsWith('test_')) {
-          continue;
-        }
 
         // Exclude legacy direct visit test data before Thilagavathy U (Aug 26, 2026)
         const rawDate = item.visitDate || item.date || item.createdAt;
@@ -252,18 +290,13 @@ export const VisitorProvider = ({ children }) => {
 
   const visitors = React.useMemo(() => {
     const safeAll = Array.isArray(allVisitors) ? allVisitors : [];
-    // If not restricted (Super Admin) and 'All Branches' is selected
-    if (activeBranch === 'All Branches') return safeAll;
-    // Otherwise return visitors matching the active branch
+    // If 'All Branches' or no branch selected, return all visitors
+    if (!activeBranch || activeBranch === 'All Branches') return safeAll;
+    // Return visitors matching the active branch using robust normalization
     return safeAll.filter(v => {
-      if (!v || !v.branch) return false;
-      const vBranchUpper = (v.branch || '').toUpperCase();
-      const activeUpper = (activeBranch || '').toUpperCase();
-      if (vBranchUpper === activeUpper) return true;
-      if (activeUpper.includes('THIRUPATTUR') && vBranchUpper === 'TIRUPATTUR') return true;
-      if (activeUpper.includes('KRISHNAGIRI') && vBranchUpper === 'SALEM') return true;
-      if (activeUpper === 'BANGALORE' && vBranchUpper === 'BANGALORE') return true;
-      return false;
+      if (!v) return false;
+      const b = v.branch || v.branchLocation;
+      return isBranchMatch(b, activeBranch);
     });
   }, [allVisitors, activeBranch]);
 

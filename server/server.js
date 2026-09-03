@@ -1,4 +1,6 @@
-require('dotenv').config({ path: '../.env' }); // Load .env from root directory
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const dns = require('dns');
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
@@ -116,33 +118,12 @@ mongoose.connect(process.env.MONGO_URI)
         );
       }
 
-      // Cleanup test data on startup (TEST 1, Lokeee, TEST 3, Test)
-      const PreBooking = require('./models/PreBooking');
-      const Visitor = require('./models/Visitor');
+      // Cleanup test data on startup (Prune invalid notification format strings)
       const Notification = require('./models/Notification');
-      const namesRegex = /^(test|test\s*\d*|tet|teest|lokeee|sample|demo)$/i;
-      const cutoffDate = new Date('2026-08-26T00:00:00.000Z');
-
-      await PreBooking.deleteMany({ 
-        $or: [
-          { fullName: { $regex: namesRegex } },
-          { mobileNumber: { $in: ['6985471278', '6985471236', '9585712541'] } }
-        ]
-      });
-      await Visitor.deleteMany({
-        $or: [
-          { visitorName: { $regex: namesRegex } },
-          { fullName: { $regex: namesRegex } },
-          { mobileNumber: { $in: ['6985471278', '6985471236', '9585712541'] } }
-        ]
-      });
       await Notification.deleteMany({
         $or: [
           { message: { $in: ["Is is waiting for approval.", "Has checked in has checked in.", "Has checked out has checked out.", "Visitor is waiting for approval.", "Visitor has checked in.", "Visitor has checked out."] } },
-          { message: { $regex: /(^Is is waiting|^Has checked in has checked in|^Has checked out has checked out|^Visitor is waiting|^Visitor has checked|visitor Visitor waiting)/i } },
-          { visitorName: { $in: ["Is", "Has checked in", "Has checked out", "is", "has", "was", "Visitor", "visitor"] } },
-          { visitorName: { $regex: namesRegex } },
-          { message: { $regex: /(test 1|test 3|lokeee|\btest\b|\btet\b|\bteest\b)/i } }
+          { message: { $regex: /(^Is is waiting|^Has checked in has checked in|^Has checked out has checked out|^Visitor is waiting|^Visitor has checked|visitor Visitor waiting)/i } }
         ]
       });
 

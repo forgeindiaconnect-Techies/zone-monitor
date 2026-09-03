@@ -157,7 +157,13 @@ const PreBookingRegistration = () => {
 
       const data = await response.json();
       if (response.ok && (data.success || data.invitation)) {
-        alert(sendEmailNow ? "Invitation email sent successfully!" : "Invitation link generated successfully!");
+        if (sendEmailNow && data.emailSent === false) {
+          alert("Invitation link generated, but the email delivery failed. You can copy and share the generated link below.");
+        } else if (sendEmailNow) {
+          alert("Invitation email sent successfully!");
+        } else {
+          alert("Invitation link generated successfully!");
+        }
         const generatedLinkVal = data.registrationLink || (data.invitation && data.invitation.token ? `${process.env.FRONTEND_URL || 'https://zone-monitor.vercel.app'}/pre-register?token=${data.invitation.token}` : '');
         setGeneratedLink(generatedLinkVal);
         fetchInvitations();

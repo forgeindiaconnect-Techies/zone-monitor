@@ -289,10 +289,28 @@ const getAllPreBookings = async (req, res) => {
       if (hrOr.length > 0) {
         filter.$or = hrOr;
       }
-      filter.visitorType = { $ne: 'NEW_VISITOR' };
     }
 
-    filter.fullName = { $not: /^(test|test 1|test 2|test 3|lokeee|testing)$/i };
+    if (req.query.branch && req.query.branch !== 'All Branches') {
+      const bUpper = req.query.branch.toUpperCase();
+      const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let bRegex = escapeRegExp(req.query.branch);
+      if (bUpper.includes('KRISHNAGIRI')) {
+        bRegex = `${bRegex}|Krishnagiri|Head Office`;
+      }
+      const branchCond = {
+        $or: [
+          { branchLocation: { $regex: new RegExp(bRegex, 'i') } },
+          { branch: { $regex: new RegExp(bRegex, 'i') } }
+        ]
+      };
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, branchCond];
+        delete filter.$or;
+      } else {
+        filter.$or = branchCond.$or;
+      }
+    }
 
     const preBookings = await PreBooking.find(filter)
       .populate('assignedHr', 'name email')

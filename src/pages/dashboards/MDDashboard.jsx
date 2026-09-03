@@ -36,20 +36,6 @@ const MDDashboard = () => {
   
   const isDirectVisit = (v) => {
     const name = String(v.visitorName || v.fullName || '').trim().toLowerCase();
-    
-    // 1. Exclude all test records
-    if (
-      name === 'test' ||
-      name === 'test 1' ||
-      name === 'test 2' ||
-      name === 'test 3' ||
-      name === 'lokeee' ||
-      name.startsWith('test ') ||
-      name.startsWith('test_') ||
-      name === 'testing'
-    ) {
-      return false;
-    }
 
     // 2. Exclude legacy test data before Thilagavathy U (Aug 26, 2026)
     const rawDate = v.visitDate || v.date || v.createdAt;
@@ -62,10 +48,16 @@ const MDDashboard = () => {
     }
 
     const host = String(v.hostEmployee || v.hostName || '').trim().toLowerCase();
+
+    // Explicit Pre-Booking check takes priority
+    if (v.isPreBooking === true || v.registrationType === 'Pre-Booking' || v.visitType === 'PRE_BOOKING') {
+      return false;
+    }
+
     const isDirect = host === 'direct visits' || host === 'direct visit' || host.includes('direct') ||
                      v.registrationType === 'Direct Visit' || v.registrationType === 'Walk-in' ||
                      v.visitType === 'DIRECT_VISIT' || v.visitorType === 'NEW_VISITOR' || v.bookingType === 'DIRECT_VISIT' ||
-                     !v.isPreBooking || v.isReturning || v.returningVisitor;
+                     v.isReturning || v.returningVisitor;
     return isDirect;
   };
 
