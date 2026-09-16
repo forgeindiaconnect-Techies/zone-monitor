@@ -26,7 +26,7 @@ const SecurityCheckIn = () => {
 
   const fetchPendingVisitors = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const authHeader = { 'Authorization': user?.token ? `Bearer ${user.token}` : '' };
 
       // Fetch from BOTH PreBooking model and Visitor model simultaneously
@@ -74,8 +74,8 @@ const SecurityCheckIn = () => {
   useEffect(() => {
     fetchPendingVisitors();
 
-    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
-    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl);
 
     socket.on('new_notification', (data) => {
@@ -133,7 +133,7 @@ const SecurityCheckIn = () => {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const authHeader = {
         'x-company-id': user?.companyId || 'FIC001',
         'Authorization': user?.token ? `Bearer ${user.token}` : ''
@@ -220,7 +220,7 @@ const SecurityCheckIn = () => {
       const data = new FormData();
       data.append('photo', file);
 
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const response = await fetch(`${API_URL}/api/visitors/upload`, {
         method: 'POST',
         body: data,
@@ -256,7 +256,7 @@ const SecurityCheckIn = () => {
   const handleCheckIn = async () => {
     if (!visitor) return;
     const targetId = visitor._id || visitor.id;
-    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
     const isVisitorCollection = visitor._isVisitorCollection || visitor.visitId != null;
 
@@ -316,7 +316,7 @@ const SecurityCheckIn = () => {
 
     if (!visitor) return;
     const targetId = visitor._id || visitor.id;
-    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
     const isVisitorCollection = visitor._isVisitorCollection || visitor.visitId != null;
 

@@ -10,7 +10,7 @@ import VisitorHistoryModal from '../components/visitors/VisitorHistoryModal';
 import VisitorRescheduleModal from '../components/visitors/VisitorRescheduleModal';
 import { formatDisplayTime, formatDisplayDateTime, formatDisplayDate } from '../utils/dateUtils';
 
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
 export default function SuperAdminPreBookings() {
   const navigate = useNavigate();
@@ -181,7 +181,7 @@ export default function SuperAdminPreBookings() {
 
     const socketUrl = import.meta.env.VITE_API_URL 
       ? import.meta.env.VITE_API_URL.replace('/api', '')
-      : (window.location.hostname === 'localhost' ? `http://localhost:5000` : 'https://fic-visitor-1.onrender.com');
+      : (window.location.hostname === 'localhost' ? `http://localhost:5000` : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl);
 
     socket.on('new_notification', (notification) => {

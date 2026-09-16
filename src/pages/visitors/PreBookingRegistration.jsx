@@ -26,7 +26,7 @@ const PreBookingRegistration = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
 
-  const _rawUrl = import.meta.env.VITE_API_URL || 'https://fic-visitor-1.onrender.com';
+  const _rawUrl = import.meta.env.VITE_API_URL || 'https://zone-monitor.onrender.com';
   const API_BASE = _rawUrl.replace(/\/api\/?$/, '') + '/api';
 
   const getHeaders = (isJson = true) => {

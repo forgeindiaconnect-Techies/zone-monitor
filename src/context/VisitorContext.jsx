@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 import { isBranchMatch } from '../utils/branchUtils';
 
 const VisitorContext = createContext(null);
-const rawBase = (import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')).replace(/\/api\/?$/, '');
+const rawBase = (import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')).replace(/\/api\/?$/, '');
 const API_URL = `${rawBase}/api/visitors`;
 const PREBOOKINGS_API_URL = `${rawBase}/api/prebookings`;
 
@@ -39,7 +39,7 @@ export const VisitorProvider = ({ children }) => {
 
   useEffect(() => {
     // Fetch network IP for mobile QR code scanning
-    fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')}/api/network-ip`)
+    fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/network-ip`)
       .then(res => res.json())
       .then(data => {
         if (data && data.ip) {
@@ -357,7 +357,7 @@ export const VisitorProvider = ({ children }) => {
     
     // Check if this is a Pre-Booking and route to the correct API endpoint
     if (visitor?.isPreBooking) {
-      const PREBOOKINGS_API_URL = `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')}/api/prebookings`;
+      const PREBOOKINGS_API_URL = `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/prebookings`;
       
       try {
         let endpointUrl = '';
@@ -499,7 +499,7 @@ export const VisitorProvider = ({ children }) => {
   const deleteVisitor = async (id, isPreBooking = false) => {
     try {
       const endpoint = isPreBooking 
-        ? `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')}/api/prebookings/${id}`
+        ? `${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/prebookings/${id}`
         : `${API_URL}/${id}`;
 
       const res = await fetch(endpoint, {

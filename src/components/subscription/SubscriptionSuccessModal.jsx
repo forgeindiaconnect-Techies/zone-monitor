@@ -11,7 +11,7 @@ const SubscriptionSuccessModal = () => {
   useEffect(() => {
     if (!user) return;
 
-    const rawApiUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const rawApiUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socketUrl = rawApiUrl.replace(/\/api\/?$/, '');
     const socket = io(socketUrl);
     

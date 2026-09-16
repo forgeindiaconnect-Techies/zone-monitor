@@ -10,7 +10,7 @@ export const NotificationProvider = ({ children }) => {
   const [persistentNotifications, setPersistentNotificationsState] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+  const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
   const setNotifications = useCallback((value) => {
     setNotificationsState((previous) => {
@@ -75,7 +75,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     fetchPersistentNotifications();
 
-    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
 
     try {

@@ -28,7 +28,7 @@ import { formatDisplayName } from '../../utils/nameFormatter';
 import { normalizeBranchName } from '../../utils/branchUtils';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.match(/^\d{1,3}\./);
-const rawApi = (import.meta.env.VITE_API_URL || (isLocalhost ? `http://${window.location.hostname}:5000` : 'https://fic-visitor-1.onrender.com')).replace(/\/api\/?$/, '');
+const rawApi = (import.meta.env.VITE_API_URL || (isLocalhost ? `http://${window.location.hostname}:5000` : 'https://zone-monitor.onrender.com')).replace(/\/api\/?$/, '');
 const API_URL = `${rawApi}/api/notifications`;
 
 const getNotificationMeta = (title = '', type = '') => {

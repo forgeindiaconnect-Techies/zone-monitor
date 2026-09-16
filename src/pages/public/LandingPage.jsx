@@ -121,7 +121,7 @@ const LandingPage = () => {
 
   const branchesList = ['Head Office(KRISHNAGIRI)', 'Bangalore'];
 
-  const _rawUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+  const _rawUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
   const API_BASE = _rawUrl.replace(/\/api\/?$/, '');
 
   useEffect(() => {

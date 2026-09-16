@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle, XCircle, Clock, AlertTriangle, Building, LinkIcon } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
 const VisitorStatus = () => {
   const { token } = useParams();
@@ -44,7 +44,7 @@ const VisitorStatus = () => {
   useEffect(() => {
     fetchStatus();
 
-    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl);
     socket.on('visitor:status-updated', () => {
       // Any status update — re-fetch to get latest

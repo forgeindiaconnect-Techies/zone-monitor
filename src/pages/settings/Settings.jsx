@@ -15,7 +15,7 @@ const Settings = () => {
       const fetchPermissions = async () => {
         try {
           setIsLoadingPermissions(true);
-          const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+          const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
           const response = await fetch(`${API_URL}/api/approval-permissions`, {
             headers: { 
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -53,7 +53,7 @@ const Settings = () => {
         const logoUrl = document.getElementById('brand-logo').value;
         const primaryColor = document.getElementById('brand-color').value;
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com')}/api/company/branding`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com')}/api/company/branding`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ const Settings = () => {
       }
     } else if (activeTab === 'approvals') {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
         
         const savePromises = permissions.map(p => 
           fetch(`${API_URL}/api/approval-permissions/${p.role}`, {

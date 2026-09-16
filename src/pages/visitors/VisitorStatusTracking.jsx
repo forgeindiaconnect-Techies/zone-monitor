@@ -35,7 +35,7 @@ const VisitorStatusTracking = () => {
   useEffect(() => {
     fetchStatus();
 
-    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl);
     socket.on('visitor:status-updated', (data) => {
       if (data.visitorId === id) {

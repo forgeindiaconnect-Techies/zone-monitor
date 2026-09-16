@@ -56,8 +56,8 @@ const SecurityDashboard = () => {
 
   // Real-Time Socket.IO Synchronization Effect
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
-    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+    const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+    const socketUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
     const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
 
     socket.on('visitor-status-updated', (data) => {
@@ -123,7 +123,7 @@ const SecurityDashboard = () => {
     setPbVisitor(null);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const reqHeaders = {
         'x-company-id': user?.companyId || 'FIC001',
         'Authorization': user?.token ? `Bearer ${user.token}` : `Bearer ${localStorage.getItem('token')}`
@@ -198,7 +198,7 @@ const SecurityDashboard = () => {
       setActionSuccess('');
 
       const targetId = pbVisitor._id || pbVisitor.id || pbVisitor.visitId || pbVisitor.visitorId;
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
 
       const response = await fetch(`${API_URL}/api/security/visitor/action`, {
         method: 'POST',
@@ -423,7 +423,7 @@ const SecurityDashboard = () => {
       setPbSearchError('');
       setPbVisitor(null);
 
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const reqHeaders = {
         'x-company-id': user?.companyId || 'FIC001',
         'Authorization': user?.token ? `Bearer ${user.token}` : `Bearer ${localStorage.getItem('token')}`

@@ -18,7 +18,7 @@ const VisitorPass = () => {
 
   const fetchVisitor = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       
       let response;
       if (qrToken) {
@@ -49,7 +49,7 @@ const VisitorPass = () => {
 
   const updateStatus = async (action) => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const targetId = visitor.visitorId || visitor.visitId || visitor._id || visitor.id;
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });

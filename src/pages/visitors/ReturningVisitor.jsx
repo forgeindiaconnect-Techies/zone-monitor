@@ -43,7 +43,7 @@ const ReturningVisitor = () => {
 
     setSearchStatus('searching');
     try {
-      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://fic-visitor-1.onrender.com');
+      const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
       const token = localStorage.getItem('token');
       const headers = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
