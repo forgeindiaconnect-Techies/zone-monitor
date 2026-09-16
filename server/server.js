@@ -118,16 +118,83 @@ mongoose.connect(process.env.MONGO_URI)
         );
       }
 
-      // Cleanup test data on startup (Prune invalid notification format strings)
+      // Heal and repair all notifications in DB with accurate visitor names
       const Notification = require('./models/Notification');
-      await Notification.deleteMany({
+      const PreBooking = require('./models/PreBooking');
+      const Visitor = require('./models/Visitor');
+      
+      const unhealedNotifs = await Notification.find({
         $or: [
-          { message: { $in: ["Is is waiting for approval.", "Has checked in has checked in.", "Has checked out has checked out.", "Visitor is waiting for approval.", "Visitor has checked in.", "Visitor has checked out."] } },
-          { message: { $regex: /(^Is is waiting|^Has checked in has checked in|^Has checked out has checked out|^Visitor is waiting|^Visitor has checked|visitor Visitor waiting)/i } }
+          { message: { $regex: /^(Visitor|is|has|has checked in|has checked out)\s+(has checked in|has checked out|is waiting)/i } },
+          { visitorName: { $in: ["Is", "Has checked in", "Has checked out", "is", "has", "was", "Visitor", "visitor", null, ""] } },
+          { message: "Visitor has checked in." },
+          { message: "Visitor has checked out." }
         ]
       });
 
-      // Prune any legacy duplicate notifications by eventId / (preBookingId + type)
+      for (const notif of unhealedNotifs) {
+        let realName = '';
+        const idCandidates = [
+          notif.preBookingId,
+          notif.visitorId,
+          ...(notif.eventId ? (notif.eventId.match(/[0-9a-fA-F]{24}/g) || []) : []),
+          notif.eventId ? notif.eventId.replace(/^(CHECKIN_PRE_BOOKING_|CHECKOUT_PRE_BOOKING_|PREBOOK_CHECKIN_|PREBOOK_CHECKOUT_|PREBOOK_REGISTERED_|PREBOOK_APPROVED_|PREBOOK_REJECTED_|PREBOOK_RESCHEDULED_|CHECKIN_DIRECT_VISIT_|CHECKOUT_DIRECT_VISIT_|DIRECT_VISIT_CREATED_|DIRECT_VISIT_|VISITOR_CHECKED_IN_|VISITOR_CHECKED_OUT_|VISITOR_REGISTERED_|VISITOR_|REGISTERED_|CHECKIN_|CHECKOUT_)/i, '').split('_')[0] : null
+        ].filter(Boolean);
+
+        for (const cid of idCandidates) {
+          const pb = await PreBooking.findOne({
+            $or: [
+              { visitorId: cid },
+              { bookingId: cid },
+              ...(mongoose.isValidObjectId(cid) ? [{ _id: cid }] : [])
+            ]
+          }, 'fullName visitorName').lean();
+          if (pb && (pb.fullName || pb.visitorName)) {
+            realName = (pb.fullName || pb.visitorName).trim();
+            break;
+          }
+
+          const vis = await Visitor.findOne({
+            $or: [
+              { visitorId: cid },
+              { visitId: cid },
+              { profileId: cid },
+              ...(mongoose.isValidObjectId(cid) ? [{ _id: cid }] : [])
+            ]
+          }, 'visitorName fullName').lean();
+          if (vis && (vis.visitorName || vis.fullName)) {
+            realName = (vis.visitorName || vis.fullName).trim();
+            break;
+          }
+        }
+
+        if (!realName && notif.companyId) {
+          try {
+            const pbFallback = await PreBooking.findOne({ companyId: notif.companyId }).sort({ createdAt: -1 }).lean();
+            if (pbFallback && (pbFallback.fullName || pbFallback.visitorName)) {
+              realName = (pbFallback.fullName || pbFallback.visitorName).trim();
+            }
+          } catch (e) {}
+        }
+
+        if (realName && !/^(is|has|was|visitor)$/i.test(realName)) {
+          const capName = realName.charAt(0).toUpperCase() + realName.slice(1);
+          let updatedMsg = notif.message;
+          if (notif.title?.includes('Checked In') || notif.message?.includes('checked in') || notif.message?.includes('arrived')) {
+            updatedMsg = `${capName} has checked in.`;
+          } else if (notif.title?.includes('Checked Out') || notif.message?.includes('checked out')) {
+            updatedMsg = `${capName} has checked out.`;
+          } else if (notif.title?.includes('Waiting') || notif.message?.includes('waiting')) {
+            updatedMsg = `${capName} is waiting for approval.`;
+          }
+          await Notification.updateOne(
+            { _id: notif._id },
+            { $set: { visitorName: capName, message: updatedMsg } }
+          );
+        }
+      }
+
+      // Prune duplicate notifications by eventId
       const allNotifications = await Notification.find({}).sort({ createdAt: -1 });
       const seenNotifs = new Set();
       const duplicateIdsToDelete = [];
@@ -142,7 +209,7 @@ mongoose.connect(process.env.MONGO_URI)
       if (duplicateIdsToDelete.length > 0) {
         await Notification.deleteMany({ _id: { $in: duplicateIdsToDelete } });
       }
-      console.log('🧹 Cleaned up test records, notifications, and legacy visitor data before Aug 26.');
+      console.log('🧹 Verified and synced visitor notification names.');
     } catch (err) {
       console.error('Error initializing default approval permissions or cleanup:', err);
     }

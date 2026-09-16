@@ -304,9 +304,11 @@ router.post('/visitor/action', authMiddleware, requireRole(...SECURITY_ROLES), a
           await createNotification({
             eventId: `${isCheckIn ? 'CHECKIN' : 'CHECKOUT'}_PRE_BOOKING_${vId}`,
             type: isCheckIn ? 'VISITOR_CHECKED_IN' : 'VISITOR_CHECKED_OUT',
-            title: isCheckIn ? 'Visitor Checked In' : 'Visitor Checked Out',
-            message: `${pbDoc.fullName} has ${isCheckIn ? 'checked in' : 'checked out'}.`,
+            title: isCheckIn ? 'Pre-Booking Checked In' : 'Pre-Booking Checked Out',
+            message: `${pbDoc.fullName || pbDoc.visitorName} has ${isCheckIn ? 'checked in' : 'checked out'}.`,
             visitorId: vId,
+            preBookingId: pbDoc._id,
+            visitorName: pbDoc.fullName || pbDoc.visitorName,
             visitorType: 'PRE_BOOKING',
             recipients: [
               { role: 'Super Admin' },
@@ -381,6 +383,7 @@ router.post('/visitor/action', authMiddleware, requireRole(...SECURITY_ROLES), a
           title: isCheckIn ? 'Direct Visitor Checked In' : 'Direct Visitor Checked Out',
           message: `${vDoc.visitorName || vDoc.fullName} has ${isCheckIn ? 'checked in' : 'checked out'}.`,
           visitorId: vId,
+          visitorName: vDoc.visitorName || vDoc.fullName,
           visitorType: 'DIRECT_VISIT',
           recipients: [
             { role: 'Super Admin' },

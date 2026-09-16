@@ -192,18 +192,6 @@ export const VisitorProvider = ({ children }) => {
         const idKey = String(item._id || item.id || '');
         if (idKey && seenIds.has(idKey)) continue;
 
-        const name = String(item.visitorName || item.fullName || '').trim();
-
-        // Exclude legacy direct visit test data before Thilagavathy U (Aug 26, 2026)
-        const rawDate = item.visitDate || item.date || item.createdAt;
-        if (rawDate && !name.toLowerCase().includes('thilagavathy') && !item.isPreBooking) {
-          const d = new Date(rawDate);
-          const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : String(rawDate);
-          if (dateStr < '2026-08-26') {
-            continue;
-          }
-        }
-
         if (idKey) seenIds.add(idKey);
         mergedData.push(item);
       }

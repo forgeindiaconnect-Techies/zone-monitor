@@ -27,20 +27,45 @@ export const cleanMessage = (item) => {
     .replace(/vaideeswari[\.\s]*2007/gi, 'Vaideeswari')
     .replace(/([\w\s]+)\.\s*\d{4}(\s+has|\s+was|\s+is|\.)/gi, (match, p1, p2) => `${p1.trim()}${p2}`);
 
-  // Fix broken sentences: "Has checked out has checked out."
-  if (/^Has checked out\s+has checked out\.?$/i.test(msg)) {
-    const name = rawVisitorName || 'Visitor';
-    title = 'Pre-Booking Checked Out';
-    msg = `${name} has checked out.`;
+  // Extract real visitor name from message if not explicitly provided
+  if (!rawVisitorName && msg) {
+    const match = msg.match(/^([A-Za-z0-9\s]+?)\s+(?:has checked in|has checked out|is waiting for approval|was approved|was rejected)/i);
+    if (match && !/^(is|has|was|visitor)$/i.test(match[1].trim())) {
+      rawVisitorName = match[1].trim();
+    }
   }
-  // Fix broken sentences: "Has checked in has checked in."
-  else if (/^Has checked in\s+has checked in\.?$/i.test(msg)) {
-    const name = rawVisitorName || 'Visitor';
-    title = 'Pre-Booking Checked In';
-    msg = `${name} has checked in.`;
+
+  // Fix check out notifications
+  if (
+    /checked\s*out/i.test(msg) || 
+    /checked\s*out/i.test(title) ||
+    item.type === 'VISITOR_CHECKED_OUT'
+  ) {
+    const isDirect = item.visitorType === 'DIRECT_VISIT' || /Direct/i.test(title);
+    title = isDirect ? 'Direct Visitor Checked Out' : 'Pre-Booking Checked Out';
+    if (rawVisitorName && rawVisitorName.toLowerCase() !== 'visitor') {
+      msg = `${rawVisitorName} has checked out.`;
+    } else if (!msg || /^(Visitor|Has checked out)\s+has checked out\.?$/i.test(msg)) {
+      msg = `Visitor has checked out.`;
+    }
   }
-  // Fix broken sentences: "Is is waiting for approval."
-  else if (/^Is\s+is waiting for approval\.?$/i.test(msg) || /^Visitor\s+is waiting for approval\.?$/i.test(msg)) {
+  // Fix check in notifications
+  else if (
+    /checked\s*in/i.test(msg) || 
+    /checked\s*in/i.test(title) || 
+    /has arrived/i.test(msg) ||
+    item.type === 'VISITOR_CHECKED_IN'
+  ) {
+    const isDirect = item.visitorType === 'DIRECT_VISIT' || /Direct/i.test(title);
+    title = isDirect ? 'Direct Visitor Checked In' : 'Pre-Booking Checked In';
+    if (rawVisitorName && rawVisitorName.toLowerCase() !== 'visitor') {
+      msg = `${rawVisitorName} has checked in.`;
+    } else if (!msg || /^(Visitor|Has checked in)\s+has checked in\.?$/i.test(msg)) {
+      msg = `Visitor has checked in.`;
+    }
+  }
+  // Fix waiting for approval notifications
+  else if (/is waiting for approval/i.test(msg) || /^Is\s+is waiting for approval\.?$/i.test(msg)) {
     const name = rawVisitorName || 'Visitor';
     title = item.isReturning || item.returningVisitor ? 'Returning Visitor Request Received' : 'New Pre-Booking';
     msg = `${name} is waiting for approval.`;
@@ -59,16 +84,10 @@ export const cleanMessage = (item) => {
       .replace(/^(Returning visitor|Visitor|New visitor|New)?\s*pre-booking for\s+/i, '')
       .replace(/\s+has been rejected by\s+/i, ' was rejected by ');
   }
-  // Standardize titles
-  else if (/checked out/i.test(msg) || /Checked Out/i.test(title)) {
-    title = 'Pre-Booking Checked Out';
-  }
-  else if (/checked in/i.test(msg) || /Checked In/i.test(title)) {
-    title = 'Pre-Booking Checked In';
-  }
 
   return {
     ...item,
+    visitorName: rawVisitorName || item.visitorName,
     title,
     message: msg
   };

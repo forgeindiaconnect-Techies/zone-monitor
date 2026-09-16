@@ -128,30 +128,13 @@ const VisitorList = () => {
   };
 
   const directVisitors = (Array.isArray(visitors) ? visitors : []).filter(v => {
-    const host = String(v.hostEmployee || v.hostName || '').trim().toLowerCase();
-    const name = String(v.visitorName || v.fullName || '').trim().toLowerCase();
-
-    // 2. Exclude legacy test data before Thilagavathy U (Aug 26, 2026)
-    const rawDate = v.visitDate || v.date || v.createdAt;
-    if (rawDate && !name.includes('thilagavathy')) {
-      const d = new Date(rawDate);
-      const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : String(rawDate);
-      if (dateStr < '2026-08-26') {
-        return false;
-      }
-    }
-    
-    // Explicit Pre-Booking check takes priority
-    if (v.isPreBooking === true || v.registrationType === 'Pre-Booking' || v.visitType === 'PRE_BOOKING') {
+    // Explicit Pre-Booking check takes priority (Pre-bookings belong in the Pre-Bookings menu)
+    if (v.isPreBooking === true || v.registrationType === 'Pre-Booking' || v.visitType === 'PRE_BOOKING' || v.bookingType === 'PRE_BOOKING') {
       return false;
     }
 
-    // Strict Direct Visit Check: Walk-ins, direct desk visits, returning visitors, or host "Direct Visits"
-    const isDirect = host === 'direct visits' || host === 'direct visit' || host.includes('direct') ||
-                     v.registrationType === 'Direct Visit' || v.registrationType === 'Walk-in' ||
-                     v.visitType === 'DIRECT_VISIT' || v.visitorType === 'NEW_VISITOR' || v.bookingType === 'DIRECT_VISIT' ||
-                     v.isReturning || v.returningVisitor;
-    return isDirect;
+    // Direct Visit: Any visit that is not a pre-booking is a direct/walk-in visit
+    return true;
   });
 
   const statusCounts = {

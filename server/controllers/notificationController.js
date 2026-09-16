@@ -158,65 +158,67 @@ exports.getNotifications = async (req, res) => {
             rawName = '';
           }
 
-          if (n.preBookingId) {
-            try {
-              const booking = await PreBooking.findById(
-                n.preBookingId,
-                'fullName visitorName'
-              ).lean();
+          const mongoose = require('mongoose');
+          const idCandidates = [
+            n.preBookingId,
+            n.visitorId,
+            ...(n.eventId ? (n.eventId.match(/[0-9a-fA-F]{24}/g) || []) : []),
+            n.eventId ? n.eventId.replace(/^(CHECKIN_PRE_BOOKING_|CHECKOUT_PRE_BOOKING_|PREBOOK_CHECKIN_|PREBOOK_CHECKOUT_|PREBOOK_REGISTERED_|PREBOOK_APPROVED_|PREBOOK_REJECTED_|PREBOOK_RESCHEDULED_|CHECKIN_DIRECT_VISIT_|CHECKOUT_DIRECT_VISIT_|DIRECT_VISIT_CREATED_|DIRECT_VISIT_|VISITOR_CHECKED_IN_|VISITOR_CHECKED_OUT_|VISITOR_REGISTERED_|VISITOR_|REGISTERED_|CHECKIN_|CHECKOUT_)/i, '').split('_')[0] : null
+          ].filter(Boolean);
 
-              if (booking) {
-                rawName =
-                  booking.fullName ||
-                  booking.visitorName ||
-                  rawName;
+          for (const candId of idCandidates) {
+            if (rawName && !/^(is|has|was|has checked in|has checked out|visitor)$/i.test(rawName)) break;
+            try {
+              const pbQuery = [
+                { visitorId: candId },
+                { bookingId: candId },
+                ...(mongoose.isValidObjectId(candId) ? [{ _id: candId }] : [])
+              ];
+              const booking = await PreBooking.findOne({ $or: pbQuery }, 'fullName visitorName').lean();
+              if (booking && (booking.fullName || booking.visitorName)) {
+                rawName = (booking.fullName || booking.visitorName).trim();
+                break;
+              }
+
+              const visQuery = [
+                { visitorId: candId },
+                { visitId: candId },
+                { profileId: candId },
+                ...(mongoose.isValidObjectId(candId) ? [{ _id: candId }] : [])
+              ];
+              const visitor = await Visitor.findOne({ $or: visQuery }, 'visitorName fullName').lean();
+              if (visitor && (visitor.visitorName || visitor.fullName)) {
+                rawName = (visitor.visitorName || visitor.fullName).trim();
+                break;
               }
             } catch (err) {
-              console.warn(
-                'Unable to resolve notification visitor name:',
-                err.message
-              );
-            }
-          }
-
-          if (!rawName && n.visitorId) {
-            try {
-              const visitor = await Visitor.findOne(
-                {
-                  $or: [
-                    { visitorId: n.visitorId },
-                    { visitId: n.visitorId }
-                  ]
-                },
-                'visitorName fullName'
-              ).lean();
-
-              if (visitor) {
-                rawName =
-                  visitor.visitorName ||
-                  visitor.fullName ||
-                  rawName;
-              }
-            } catch (err) {
-              console.warn(
-                'Unable to resolve direct visitor name:',
-                err.message
-              );
+              // ignore
             }
           }
 
           if (!rawName && n.message) {
             const matchName = n.message.match(/^([A-Za-z0-9\s]+?)\s+(?:has checked in|has checked out|is waiting for approval|was approved|was rejected)/i);
-            if (matchName && !/^(is|has|visitor)$/i.test(matchName[1].trim())) {
+            if (matchName && !/^(is|has|was|visitor)$/i.test(matchName[1].trim())) {
               rawName = matchName[1].trim();
             }
           }
 
           rawName = String(rawName || 'Visitor').trim();
+          if (rawName.toLowerCase() === 'visitor') {
+            // Check if there is a recent prebooking or visitor matching the company
+            try {
+              const recentPb = await PreBooking.findOne({ companyId: n.companyId }).sort({ createdAt: -1 }).lean();
+              if (recentPb && (recentPb.fullName || recentPb.visitorName)) {
+                rawName = recentPb.fullName || recentPb.visitorName;
+              }
+            } catch (e) {}
+          }
 
           const nameCap =
             rawName.charAt(0).toUpperCase() +
             rawName.slice(1);
+
+          n.visitorName = nameCap;
 
           // 1. Check In & Check Out Notifications
           if (

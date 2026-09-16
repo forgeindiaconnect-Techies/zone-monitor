@@ -13,6 +13,8 @@ const createNotification = async ({
   message,
   visitorId = null,
   visitorType = null,
+  visitorName = null,
+  preBookingId = null,
   recipients = [],
   companyId = 'FIC001',
   branchId = 'All Branches',
@@ -29,6 +31,8 @@ const createNotification = async ({
         message,
         visitorId,
         visitorType,
+        visitorName,
+        preBookingId,
         recipients,
         companyId,
         branchId
