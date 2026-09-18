@@ -10,6 +10,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import VisitorHistoryModal from '../../components/visitors/VisitorHistoryModal';
 import VisitorRescheduleModal from '../../components/visitors/VisitorRescheduleModal';
 import { formatDisplayTime, formatDisplayDateTime, formatDisplayDate } from '../../utils/dateUtils';
+import { getHostStringList } from '../../utils/hostUtils';
 
 const VisitorList = () => {
   const { visitors, allVisitors, updateVisitorStatus, updateVisitorTracking, updateVisitor, deleteVisitor, networkIp } = useVisitors();
@@ -58,13 +59,16 @@ const VisitorList = () => {
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return 'N/A';
     try {
-      const cleanStr = typeof dateStr === 'string' && dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-      const d = new Date(cleanStr);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-      }
-    } catch (e) {}
-    return String(dateStr);
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return String(dateStr);
+      return d.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return String(dateStr);
+    }
   };
 
   const formatVisitorId = (rawId, index = 0) => {
@@ -80,15 +84,24 @@ const VisitorList = () => {
   const [reportStatusFilter, setReportStatusFilter] = useState('ALL');
   const [reportDateFilter, setReportDateFilter] = useState('');
 
-  const [hosts, setHosts] = useState([
-    'PRIYADHARSHINI(HR)',
-    'GANESH KUMAR(HR)',
-    'SANDEEP(CEO SIR)',
-    'AVINASH(MD SIR)',
-    'SABARI(ADMIN)',
-    'AGILA(IT)',
-    'DIRECT VISITS'
-  ]);
+  const [hosts, setHosts] = useState(getHostStringList([]));
+
+  React.useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+        const res = await fetch(`${API_URL}/api/users/hr`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+          setHosts(getHostStringList(list));
+        }
+      } catch (err) {
+        console.error("Failed to load hosts:", err);
+      }
+    };
+    fetchHosts();
+  }, []);
 
 
   // Handle URL params for filtering

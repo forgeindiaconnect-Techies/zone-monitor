@@ -10,33 +10,9 @@ import logoImg from '../../assets/logo.svg';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TimeDropdown from '../../components/TimeDropdown';
+import { buildHostOptions } from '../../utils/hostUtils';
 
-const formatTimeTo12Hour = (timeStr) => {
-  if (!timeStr) return '';
-  if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
-    return timeStr;
-  }
-  const parts = timeStr.split(':');
-  if (parts.length < 2) return timeStr;
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts[1];
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const formattedHours = hours < 10 ? '0' + hours : hours;
-  return `${formattedHours}:${minutes} ${ampm}`;
-};
-
-const hostOptions = [
-  { label: "Priyadharshini (HR)", name: "Priyadharshini", dbName: "PRIYADHARSHINI" },
-  { label: "Ganesh Kumar (HR)", name: "Ganesh Kumar", dbName: "GANESH KUMAR" },
-  { label: "Sandeep (CEO Sir)", name: "Sandeep", dbName: "SANDEEP" },
-  { label: "Avinash (MD Sir)", name: "Avinash", dbName: "AVINASH" },
-  { label: "Sabari (Admin)", name: "Sabari", dbName: "SABARI" },
-  { label: "Agila (IT)", name: "Agila", dbName: "AGILA" },
-  { label: "Joe Christo (Senior HR)", name: "Joe Christo", dbName: "JOE CHRISTO" },
-  { label: "Direct Visits", name: "Direct Visits", dbName: "DIRECT VISITS" }
-];
+const fallbackHostOptions = buildHostOptions([]);
 
 const isAllowedDay = (date) => {
   const day = date.getDay();
@@ -94,13 +70,14 @@ const PublicPreBooking = () => {
   const [activeBooking, setActiveBooking] = useState(null);
 
   const [hrUsers, setHrUsers] = useState([]);
+  const [dynamicHostOptions, setDynamicHostOptions] = useState(fallbackHostOptions);
 
   const getHrId = (dbName) => {
     if (!dbName || dbName === 'DIRECT VISITS') return '';
-    const found = hrUsers.find(u => u.name.toUpperCase().replace(/\s/g, '') === dbName.replace(/\s/g, ''));
+    const found = hrUsers.find(u => u.name && u.name.toUpperCase().replace(/\s/g, '') === dbName.replace(/\s/g, ''));
     if (found) return found._id || found.id;
     // Fallback to Priyadharshini's ID for other normal visitors
-    const priya = hrUsers.find(u => u.name.toUpperCase().includes('PRIYA'));
+    const priya = hrUsers.find(u => u.name && u.name.toUpperCase().includes('PRIYA'));
     if (priya) return priya._id || priya.id;
     return hrUsers.length > 0 ? (hrUsers[0]._id || hrUsers[0].id) : '';
   };
@@ -204,8 +181,10 @@ const PublicPreBooking = () => {
       try {
         const response = await fetch(`${API_BASE}/api/users/hr`);
         const result = await response.json();
-        if (response.ok && result.success && result.data) {
+        if (response.ok && result.success && Array.isArray(result.data)) {
           setHrUsers(result.data);
+          const generated = buildHostOptions(result.data);
+          setDynamicHostOptions(generated);
         }
       } catch (err) {
         console.error("Error loading HR users:", err);
@@ -716,8 +695,8 @@ const PublicPreBooking = () => {
                   value={formData.selectedHostLabel || ""}
                   onChange={(e) => {
                     const label = e.target.value;
-                    const option = hostOptions.find(o => o.label === label);
-                    const resolvedId = getHrId(option ? option.dbName : '');
+                    const option = (dynamicHostOptions && dynamicHostOptions.length ? dynamicHostOptions : fallbackHostOptions).find(o => o.label === label);
+                    const resolvedId = option?.id || getHrId(option ? option.dbName : '');
                     setFormData(prev => ({
                       ...prev,
                       selectedHostLabel: label,
@@ -729,7 +708,7 @@ const PublicPreBooking = () => {
                   required
                 >
                   <option value="">Select Host</option>
-                  {hostOptions.map((opt, idx) => (
+                  {(dynamicHostOptions && dynamicHostOptions.length ? dynamicHostOptions : fallbackHostOptions).map((opt, idx) => (
                     <option key={idx} value={opt.label}>{opt.label}</option>
                   ))}
                 </select>

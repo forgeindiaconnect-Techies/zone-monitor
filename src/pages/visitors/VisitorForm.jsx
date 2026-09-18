@@ -11,6 +11,7 @@ import Webcam from 'react-webcam';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TimeDropdown from '../../components/TimeDropdown';
+import { getHostStringList } from '../../utils/hostUtils';
 
 const VisitorForm = () => {
   const { addVisitor, allVisitors, networkIp } = useVisitors();
@@ -20,16 +21,24 @@ const VisitorForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [hosts, setHosts] = useState([
-    'Priyadharshini (HR)',
-    'Ganesh Kumar (HR)',
-    'Sandeep (CEO Sir)',
-    'Avinash (MD Sir)',
-    'Sabari (Admin)',
-    'Agila (IT)',
-    'Joe Christo (Senior HR)',
-    'Direct Visits'
-  ]);
+  const [hosts, setHosts] = useState(getHostStringList([]));
+
+  React.useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+        const res = await fetch(`${API_URL}/api/users/hr`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+          setHosts(getHostStringList(list));
+        }
+      } catch (err) {
+        console.error("Failed to load hosts:", err);
+      }
+    };
+    fetchHosts();
+  }, []);
 
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
 

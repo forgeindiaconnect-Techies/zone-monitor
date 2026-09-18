@@ -6,6 +6,7 @@ import { Search, User, Calendar, Save, AlertCircle, Info, History, ArrowLeft, Ch
 import { calculateTimeSpent } from '../../utils/timeUtils';
 import { formatDisplayDate, formatDisplayTime } from '../../utils/dateUtils';
 import { formatDisplayName } from '../../utils/nameFormatter';
+import { getHostStringList } from '../../utils/hostUtils';
 
 const ReturningVisitor = () => {
   const navigate = useNavigate();
@@ -25,16 +26,24 @@ const ReturningVisitor = () => {
     visitDate: new Date().toISOString().split('T')[0],
   });
 
-  const [hosts, setHosts] = useState([
-    'Priyadharshini (HR)',
-    'Ganesh Kumar (HR)',
-    'Sandeep (CEO Sir)',
-    'Avinash (MD Sir)',
-    'Sabari (Admin)',
-    'Agila (IT)',
-    'Joe Christo (Senior HR)',
-    'Direct Visits'
-  ]);
+  const [hosts, setHosts] = useState(getHostStringList([]));
+
+  useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://zone-monitor.onrender.com');
+        const res = await fetch(`${API_URL}/api/users/hr`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+          setHosts(getHostStringList(list));
+        }
+      } catch (err) {
+        console.error("Failed to load hosts:", err);
+      }
+    };
+    fetchHosts();
+  }, []);
 
   const handleSearch = async (e, forceQuery = null) => {
     e?.preventDefault();

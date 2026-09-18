@@ -22,6 +22,8 @@ import {
   MapPin
 } from 'lucide-react';
 
+import { getHostStringList } from '../../utils/hostUtils';
+
 const PreBookingRegistration = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
@@ -77,6 +79,8 @@ const PreBookingRegistration = () => {
   const [selectedInv, setSelectedInv] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [hosts, setHosts] = useState(getHostStringList([]));
+
   const fetchInvitations = async () => {
     setListLoading(true);
     try {
@@ -98,6 +102,24 @@ const PreBookingRegistration = () => {
   useEffect(() => {
     fetchInvitations();
   }, [statusFilter]);
+
+  useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/users/hr`, {
+          headers: getHeaders(false)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const hostList = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+          setHosts(getHostStringList(hostList));
+        }
+      } catch (e) {
+        console.error("Failed to load hosts:", e);
+      }
+    };
+    fetchHosts();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -377,14 +399,17 @@ const PreBookingRegistration = () => {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Host Employee to Meet</label>
-            <input 
-              type="text" 
-              name="hostEmployee" 
-              value={formData.hostEmployee || ''} 
+            <select
+              name="hostEmployee"
+              value={formData.hostEmployee || ''}
               onChange={handleChange}
-              placeholder="e.g., John Doe (HR / Host)"
               className={inputClassName}
-            />
+            >
+              <option value="">Select Host</option>
+              {hosts.map((h, idx) => (
+                <option key={idx} value={h}>{h}</option>
+              ))}
+            </select>
           </div>
 
           <div>

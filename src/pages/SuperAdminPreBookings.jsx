@@ -1508,15 +1508,23 @@ export default function SuperAdminPreBookings() {
                     className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white"
                   >
                     <option value="">Select Host Employee</option>
-                    <option value="PRIYADHARSHINI(HR)">PRIYADHARSHINI(HR)</option>
-                    <option value="GANESH KUMAR(HR)">GANESH KUMAR(HR)</option>
-                    <option value="SANDEEP(CEO SIR)">SANDEEP(CEO SIR)</option>
-                    <option value="AVINASH(MD SIR)">AVINASH(MD SIR)</option>
-                    <option value="SABARI(ADMIN)">SABARI(ADMIN)</option>
-                    <option value="AGILA(IT)">AGILA(IT)</option>
-                    {hrUsers && hrUsers.map((hr, idx) => (
-                      <option key={idx} value={hr.name}>{hr.name}</option>
-                    ))}
+                    {hrUsers && hrUsers.length > 0 ? (
+                      hrUsers.map((hr, idx) => {
+                        const label = `${hr.name}${hr.role ? ` (${hr.role})` : ''}`;
+                        return <option key={idx} value={hr.name}>{label}</option>;
+                      })
+                    ) : (
+                      <>
+                        <option value="Priyadharshini">Priyadharshini (HR)</option>
+                        <option value="Ganesh Kumar">Ganesh Kumar (HR)</option>
+                        <option value="Sandeep">Sandeep (CEO Sir)</option>
+                        <option value="Avinash">Avinash (MD Sir)</option>
+                        <option value="Sabari">Sabari (Admin)</option>
+                        <option value="Agila">Agila (IT)</option>
+                        <option value="Joe Christo">Joe Christo (Senior HR)</option>
+                        <option value="Direct Visits">Direct Visits</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
