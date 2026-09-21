@@ -241,6 +241,14 @@ export default function SuperAdminPreBookings() {
   };
 
   const filteredReports = (Array.isArray(reportsData) ? reportsData : []).filter((r) => {
+    const host = String(r.hostEmployee || r.hostName || r.host || '').trim().toLowerCase();
+    const isDirectVisit = host === 'direct visits' || host === 'direct visit' || host === 'direct' ||
+                          r.isDirectVisit || r.isDirect ||
+                          r.registrationType === 'Direct Visit' || r.visitType === 'DIRECT_VISIT';
+
+    if (isDirectVisit) {
+      return false; // Direct visits belong strictly in Direct Visit Reports
+    }
 
     const q = reportSearchQuery.toLowerCase().trim();
     const matchesQuery =
@@ -405,6 +413,15 @@ export default function SuperAdminPreBookings() {
       (targetStatus === "CHECKED_OUT" && (itemStatus === "EXITED" || itemStatus === "CHECKED_OUT"));
 
     const matchesDate = !dateFilter || (item.visitDate && item.visitDate.startsWith(dateFilter));
+
+    const host = String(item.hostEmployee || item.hostName || item.host || '').trim().toLowerCase();
+    const isDirectVisit = host === 'direct visits' || host === 'direct visit' || host === 'direct' ||
+                          item.isDirectVisit || item.isDirect ||
+                          item.registrationType === 'Direct Visit' || item.visitType === 'DIRECT_VISIT';
+
+    if (isDirectVisit) {
+      return false; // Direct visits belong strictly in Direct Visit Management (/visitors)
+    }
 
     return matchesQuery && matchesStatus && matchesDate;
   });
