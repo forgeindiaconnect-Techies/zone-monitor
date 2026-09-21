@@ -60,5 +60,9 @@ export const formatDisplayDate = (dateVal) => {
 
 export const formatAppointmentDate = formatDisplayDate;
 export const formatAppointmentTime = formatDisplayTime;
+export const formatTimeTo12Hour = (timeVal) => {
+  if (!timeVal) return '10:00 AM';
+  return formatDisplayTime(timeVal);
+};
 
 

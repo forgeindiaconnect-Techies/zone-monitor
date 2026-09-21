@@ -30,7 +30,21 @@ export const buildHostOptions = (dbUsers = []) => {
       if (!uName) return;
       const lower = uName.toLowerCase();
       // Ignore direct visits / system / test / excluded users if in db
-      if (lower.includes('direct visit') || lower === 'system' || lower === 'admin user' || lower.includes('gowtham')) return;
+      const roleLower = (u.role || '').toLowerCase();
+      if (
+        lower.includes('direct visit') ||
+        lower === 'system' ||
+        lower === 'admin user' ||
+        lower.includes('test') ||
+        lower.includes('gowtham') ||
+        lower.includes('fic super admin') ||
+        lower.includes('saas admin') ||
+        lower.includes('super admin') ||
+        roleLower.includes('super admin') ||
+        roleLower.includes('saas') ||
+        roleLower.includes('security') ||
+        roleLower.includes('visitor')
+      ) return;
 
       const alreadyInList = result.some(item => {
         const iName = item.name.toLowerCase().replace(/\s+/g, '');

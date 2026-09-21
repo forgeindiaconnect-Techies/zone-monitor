@@ -525,6 +525,10 @@ const SecurityDashboard = () => {
 
     const host = String(v.hostEmployee || v.hostName || '').trim().toLowerCase();
 
+    if (host === 'direct visits' || host === 'direct visit' || host === 'direct') {
+      return true;
+    }
+
     // Explicit Pre-Booking check takes priority
     if (v.isPreBooking === true || v.registrationType === 'Pre-Booking' || v.visitType === 'PRE_BOOKING') {
       return false;

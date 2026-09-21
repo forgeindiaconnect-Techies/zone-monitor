@@ -241,21 +241,6 @@ export default function SuperAdminPreBookings() {
   };
 
   const filteredReports = (Array.isArray(reportsData) ? reportsData : []).filter((r) => {
-    // Strictly exclude Direct Visits from Pre-Bookings Report
-    const host = String(r.hostEmployee || r.hostName || '').toLowerCase();
-    const purpose = String(r.visitPurpose || r.purpose || '').toLowerCase();
-    const regType = String(r.registrationType || '').toLowerCase();
-    const vType = String(r.visitType || r.visitorType || '').toLowerCase();
-    const isDirect = host.includes('direct') || 
-                     purpose.includes('direct') || 
-                     regType.includes('direct') || 
-                     vType.includes('direct') || 
-                     vType === 'new_visitor' ||
-                     r.isDirectVisit || 
-                     r.isDirect;
-    if (isDirect) {
-      return false;
-    }
 
     const q = reportSearchQuery.toLowerCase().trim();
     const matchesQuery =
@@ -421,19 +406,7 @@ export default function SuperAdminPreBookings() {
 
     const matchesDate = !dateFilter || (item.visitDate && item.visitDate.startsWith(dateFilter));
 
-    const host = String(item.hostEmployee || item.hostName || '').toLowerCase();
-    const purpose = String(item.visitPurpose || item.purpose || '').toLowerCase();
-    const regType = String(item.registrationType || '').toLowerCase();
-    const vType = String(item.visitType || item.visitorType || '').toLowerCase();
-    const isDirectVisit = host.includes('direct') || 
-                          purpose.includes('direct') || 
-                          regType.includes('direct') || 
-                          vType.includes('direct') || 
-                          vType === 'new_visitor' ||
-                          item.isDirectVisit || 
-                          item.isDirect;
-
-    return matchesQuery && matchesStatus && matchesDate && !isDirectVisit;
+    return matchesQuery && matchesStatus && matchesDate;
   });
 
   const approveVisitor = async (id) => {

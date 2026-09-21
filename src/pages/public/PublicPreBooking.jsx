@@ -11,6 +11,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TimeDropdown from '../../components/TimeDropdown';
 import { buildHostOptions } from '../../utils/hostUtils';
+import { formatTimeTo12Hour } from '../../utils/dateUtils';
 
 const fallbackHostOptions = buildHostOptions([]);
 

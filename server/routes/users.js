@@ -10,8 +10,8 @@ router.get(['/hr', '/hosts'], async (req, res) => {
   try {
     const hostUsers = await User.find({
       status: 'Active',
-      role: { $ne: 'Security' },
-      name: { $nin: [/gowtham/i] }
+      role: { $nin: ['Security', 'Security Guard', 'SaaS Super Admin', 'Super Admin', 'Visitor', 'saas_super_admin', 'super_admin'] },
+      name: { $nin: [/gowtham/i, /fic super admin/i, /saas admin/i, /super admin/i, /test/i] }
     }, 'name email role branch _id').sort({ name: 1 });
     res.json({ success: true, data: hostUsers, users: hostUsers });
   } catch (err) {

@@ -141,6 +141,12 @@ const VisitorList = () => {
   };
 
   const directVisitors = (Array.isArray(visitors) ? visitors : []).filter(v => {
+    // If the host is specifically 'Direct Visits' (or 'Direct Visit'), show it in Direct Visits
+    const host = String(v.hostEmployee || v.hostName || '').toLowerCase().trim();
+    if (host === 'direct visits' || host === 'direct visit' || host === 'direct' || v.registrationType === 'Direct Visit' || v.visitType === 'DIRECT_VISIT') {
+      return true;
+    }
+
     // Explicit Pre-Booking check takes priority (Pre-bookings belong in the Pre-Bookings menu)
     if (v.isPreBooking === true || v.registrationType === 'Pre-Booking' || v.visitType === 'PRE_BOOKING' || v.bookingType === 'PRE_BOOKING') {
       return false;
