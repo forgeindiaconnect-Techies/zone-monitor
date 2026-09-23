@@ -60,7 +60,7 @@ const createPreBooking = async (req, res) => {
       });
     }
 
-    // Weekday validation: only Monday (1), Wednesday (3), Saturday (6) allowed
+    // Weekday validation: Monday (1), Wednesday (3), Friday (5), Saturday (6) allowed
     const cleanDateStr = String(visitDate).split('T')[0];
     const selectedDate = new Date(`${cleanDateStr}T00:00:00`);
 
@@ -71,12 +71,12 @@ const createPreBooking = async (req, res) => {
       });
     }
 
-    const allowedDays = [1, 3, 6]; // Monday, Wednesday, Saturday
+    const allowedDays = [1, 3, 5, 6]; // Monday, Wednesday, Friday, Saturday
 
     if (!allowedDays.includes(selectedDate.getDay())) {
       return res.status(400).json({
         success: false,
-        message: "Pre-booking is allowed only on Monday, Wednesday, and Saturday."
+        message: "Pre-booking is allowed only on Monday, Wednesday, Friday, and Saturday."
       });
     }
 
@@ -1346,12 +1346,12 @@ const reschedulePreBooking = async (req, res) => {
       });
     }
 
-    const allowedDays = [1, 3, 6]; // Monday, Wednesday, Saturday
+    const allowedDays = [1, 3, 5, 6]; // Monday, Wednesday, Friday, Saturday
 
     if (!allowedDays.includes(newDateObj.getDay())) {
       return res.status(400).json({
         success: false,
-        message: "Pre-booking is allowed only on Monday, Wednesday, and Saturday."
+        message: "Pre-booking is allowed only on Monday, Wednesday, Friday, and Saturday."
       });
     }
 

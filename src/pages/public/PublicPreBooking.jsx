@@ -17,13 +17,13 @@ const fallbackHostOptions = buildHostOptions([]);
 
 const isAllowedDay = (date) => {
   const day = date.getDay();
-  // Monday = 1, Wednesday = 3, Saturday = 6
-  return [1, 3, 6].includes(day);
+  // Monday = 1, Wednesday = 3, Friday = 5, Saturday = 6
+  return [1, 3, 5, 6].includes(day);
 };
 
 const getNextAllowedVisitDate = () => {
   const d = new Date();
-  while (![1, 3, 6].includes(d.getDay())) {
+  while (![1, 3, 5, 6].includes(d.getDay())) {
     d.setDate(d.getDate() + 1);
   }
   const year = d.getFullYear();
@@ -306,7 +306,7 @@ const PublicPreBooking = () => {
     }
     const chosenDate = new Date(`${formData.visitDate}T00:00:00`);
     if (!isAllowedDay(chosenDate)) {
-      setErrorMsg('Visits can only be booked on Monday, Wednesday, or Saturday.');
+      setErrorMsg('Visits can only be booked on Monday, Wednesday, Friday, or Saturday.');
       return;
     }
     if (!formData.expectedArrivalTime) {

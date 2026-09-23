@@ -8,7 +8,8 @@ import { formatDisplayName } from '../../utils/nameFormatter';
 
 const isAllowedDay = (date) => {
   const day = date.getDay();
-  return [1, 3, 6].includes(day);
+  // Monday = 1, Wednesday = 3, Friday = 5, Saturday = 6
+  return [1, 3, 5, 6].includes(day);
 };
 
 const VisitorRescheduleModal = ({ visitor, onClose, onSuccess }) => {
@@ -72,7 +73,7 @@ const VisitorRescheduleModal = ({ visitor, onClose, onSuccess }) => {
     const isDirect = visitor.bookingType === 'DIRECT_VISIT' || visitor.visitType === 'DIRECT_VISIT' || visitor.registrationType === 'Direct Visit';
     const chosenDate = new Date(`${date}T00:00:00`);
     if (!isDirect && !isAllowedDay(chosenDate)) {
-      setError('Pre-booking is allowed only on Monday, Wednesday, and Saturday.');
+      setError('Pre-booking is allowed only on Monday, Wednesday, Friday, and Saturday.');
       return;
     }
 
